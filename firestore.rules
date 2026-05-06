@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // The app stores everything under /app/{key}
+    // Read: open to all (storefront needs to read products, banners, etc.)
+    // Write: open — admin password is enforced inside the app itself
+    match /app/{document} {
+      allow read, write: if true;
+    }
+
+  }
+}
