@@ -29,19 +29,23 @@ export default function CartScreen() {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <h4 className="text-sm font-semibold leading-tight" style={{ color: C.navy }}>{l.product.name}</h4>
-          <button onClick={() => removeFromCart(l.productId, l.variant)} className="text-gray-400 hover:text-red-500 flex-shrink-0 transition-colors">
+          <button onClick={() => removeFromCart(l.productId, l.variant, l.size || '', l.color || '')} className="text-gray-400 hover:text-red-500 flex-shrink-0 transition-colors">
             <Trash2 size={14} />
           </button>
         </div>
-        {l.variant && <p className="text-xs mt-1" style={{ color: C.muted }}>{l.variant}</p>}
+        <div className="flex flex-wrap gap-x-3 mt-0.5">
+          {l.variant && <p className="text-xs" style={{ color: C.muted }}>{l.variant}</p>}
+          {l.size && <p className="text-xs" style={{ color: C.muted }}>Size: {l.size}</p>}
+          {l.color && <p className="text-xs" style={{ color: C.muted }}>Color: {l.color}</p>}
+        </div>
         <div className="flex items-center justify-between mt-3">
           <span className="text-sm font-bold" style={{ color: C.navy }}>
             {formatPrice(l.product.price * l.qty, settings.currency)}
           </span>
           <div className="flex items-center gap-1 rounded-xl" style={{ background: '#fff', border: '1px solid #eee' }}>
-            <button onClick={() => updateQty(l.productId, l.variant, l.qty - 1)} className="w-8 h-8 flex items-center justify-center"><Minus size={12} /></button>
+            <button onClick={() => updateQty(l.productId, l.variant, l.qty - 1, l.size || '', l.color || '')} className="w-8 h-8 flex items-center justify-center"><Minus size={12} /></button>
             <span className="w-6 text-center text-xs font-bold" style={{ color: C.navy }}>{l.qty}</span>
-            <button onClick={() => updateQty(l.productId, l.variant, l.qty + 1)} className="w-8 h-8 flex items-center justify-center"><Plus size={12} /></button>
+            <button onClick={() => updateQty(l.productId, l.variant, l.qty + 1, l.size || '', l.color || '')} className="w-8 h-8 flex items-center justify-center"><Plus size={12} /></button>
           </div>
         </div>
       </div>
@@ -53,7 +57,7 @@ export default function CartScreen() {
       <h3 className="text-base font-bold mb-4" style={{ color: C.navy }}>Order Summary</h3>
       <div className="space-y-3 text-sm mb-4">
         {lines.map(l => (
-          <div key={`${l.productId}-${l.variant}`} className="flex justify-between" style={{ color: C.mutedDark }}>
+          <div key={`${l.productId}-${l.variant}-${l.size || ''}-${l.color || ''}`} className="flex justify-between" style={{ color: C.mutedDark }}>
             <span className="truncate flex-1 pr-2">{l.product.name} ×{l.qty}</span>
             <span className="flex-shrink-0 font-medium">{formatPrice(l.product.price * l.qty, settings.currency)}</span>
           </div>
@@ -114,7 +118,7 @@ export default function CartScreen() {
           ) : (
             <>
               <div className="px-5 space-y-3">
-                {lines.map(l => <CartItem key={`${l.productId}-${l.variant}`} l={l} />)}
+                {lines.map(l => <CartItem key={`${l.productId}-${l.variant}-${l.size || ''}-${l.color || ''}`} l={l} />)}
               </div>
               <div className="mx-5 mt-5 p-4 rounded-2xl border" style={{ borderColor: '#eee' }}>
                 <div className="space-y-2 text-sm">
@@ -174,7 +178,7 @@ export default function CartScreen() {
           <div className="flex flex-1 overflow-hidden">
             {/* Left: Cart items */}
             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
-              {lines.map(l => <CartItem key={`${l.productId}-${l.variant}`} l={l} />)}
+              {lines.map(l => <CartItem key={`${l.productId}-${l.variant}-${l.size || ''}-${l.color || ''}`} l={l} />)}
             </div>
             {/* Right: Summary */}
             <div className="w-96 flex-shrink-0 overflow-y-auto px-8 py-6" style={{ borderLeft: '1px solid #eee', background: '#fafafa' }}>

@@ -67,8 +67,8 @@ function ImageRow({ img, onChange, onRemove }) {
 function ProductEditor({ open, product, categories, onClose, onSave }) {
   const [form, setForm] = useState({
     name: '', categoryId: categories[0]?.id || '', price: '', mrp: '', stock: 0,
-    images: [''], description: '', variants: '', badge: '', featured: false,
-    rating: 4.5, reviews: 0,
+    images: [''], description: '', variants: '', sizes: '', colors: '',
+    gender: '', badge: '', featured: false, rating: 4.5, reviews: 0,
   });
 
   useEffect(() => {
@@ -82,6 +82,9 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
         images: product.images?.length ? product.images : [''],
         description: product.description || '',
         variants: (product.variants || []).join(', '),
+        sizes: (product.sizes || []).join(', '),
+        colors: (product.colors || []).join(', '),
+        gender: product.gender || '',
         badge: product.badge || '',
         featured: !!product.featured,
         rating: product.rating || 4.5,
@@ -102,6 +105,8 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
       reviews: Number(form.reviews) || 0,
       images: form.images.filter(i => i.trim()),
       variants: form.variants.split(',').map(v => v.trim()).filter(Boolean),
+      sizes: form.sizes.split(',').map(v => v.trim()).filter(Boolean),
+      colors: form.colors.split(',').map(v => v.trim()).filter(Boolean),
     };
     if (!data.name || !data.price) return alert('Name and price are required');
     if (data.images.length === 0) return alert('Add at least one image (URL or upload)');
@@ -124,9 +129,17 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
           <Select label="Category *" value={form.categoryId}
             onChange={e => setForm({ ...form, categoryId: e.target.value })}
             options={categories.map(c => ({ value: c.id, label: c.name }))}/>
-          <Input label="Badge (e.g. New, Sale)" value={form.badge}
-            onChange={e => setForm({ ...form, badge: e.target.value })}/>
+          <Select label="Gender (optional)" value={form.gender}
+            onChange={e => setForm({ ...form, gender: e.target.value })}
+            options={[
+              { value: '', label: 'All / Unspecified' },
+              { value: 'men', label: 'Men' },
+              { value: 'women', label: 'Women' },
+              { value: 'unisex', label: 'Unisex' },
+            ]}/>
         </div>
+        <Input label="Badge (e.g. New, Sale)" value={form.badge}
+          onChange={e => setForm({ ...form, badge: e.target.value })}/>
         <div className="grid grid-cols-3 gap-3">
           <Input label="Price (₹) *" type="number" value={form.price}
             onChange={e => setForm({ ...form, price: e.target.value })}/>
@@ -140,6 +153,14 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
         <Input label="Variants (comma-separated, e.g. S, M, L or 40mm, 42mm)"
           value={form.variants}
           onChange={e => setForm({ ...form, variants: e.target.value })}/>
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Sizes — optional (e.g. S, M, L, XL)"
+            value={form.sizes}
+            onChange={e => setForm({ ...form, sizes: e.target.value })}/>
+          <Input label="Colors — optional (e.g. Red, Blue, Black)"
+            value={form.colors}
+            onChange={e => setForm({ ...form, colors: e.target.value })}/>
+        </div>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">

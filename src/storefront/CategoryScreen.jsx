@@ -11,6 +11,7 @@ export default function CategoryScreen() {
   const { products, categories, cart } = useStore();
   const { route, navigate, back } = useRoute();
   const [activeCat, setActiveCat] = useState(route.params.id || 'all');
+  const [gender, setGender] = useState('all');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('relevance');
 
@@ -18,12 +19,14 @@ export default function CategoryScreen() {
 
   const filtered = useMemo(() => {
     let list = activeCat === 'all' ? products : products.filter(p => p.categoryId === activeCat);
+    if (gender === 'men') list = list.filter(p => p.gender === 'men' || p.gender === 'unisex');
+    if (gender === 'women') list = list.filter(p => p.gender === 'women' || p.gender === 'unisex');
     if (query) list = list.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
     if (sort === 'low') list = [...list].sort((a, b) => a.price - b.price);
     if (sort === 'high') list = [...list].sort((a, b) => b.price - a.price);
     if (sort === 'rating') list = [...list].sort((a, b) => b.rating - a.rating);
     return list;
-  }, [products, activeCat, query, sort]);
+  }, [products, activeCat, gender, query, sort]);
 
   const cartCount = cart.reduce((a, b) => a + b.qty, 0);
   const activeCatObj = categories.find(c => c.id === activeCat);
@@ -42,6 +45,26 @@ export default function CategoryScreen() {
           <IconButton onClick={() => navigate('cart')} badge={cartCount}>
             <ShoppingBag size={18} style={{ color: C.navy }} />
           </IconButton>
+        </div>
+
+        {/* ── Mobile gender toggle ── */}
+        <div className="md:hidden px-5 pb-4">
+          <div className="flex rounded-2xl p-1" style={{ background: C.bgSoft }}>
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'men', label: 'Men' },
+              { key: 'women', label: 'Women' },
+            ].map(({ key, label }) => (
+              <button key={key} onClick={() => setGender(key)}
+                className="flex-1 h-11 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background: gender === key ? C.navy : 'transparent',
+                  color: gender === key ? C.gold : C.navy,
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── Mobile search + sort ── */}
@@ -116,7 +139,7 @@ export default function CategoryScreen() {
             </div>
           </div>
           {/* Desktop category chips */}
-          <div className="flex gap-2 px-8 pb-4 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 px-8 pb-3 overflow-x-auto no-scrollbar">
             <button onClick={() => setActiveCat('all')}
               className="flex-shrink-0 px-5 h-9 rounded-full text-xs font-semibold transition-all"
               style={{ background: activeCat === 'all' ? C.navy : C.bgSoft, color: activeCat === 'all' ? C.gold : C.navy }}>
@@ -127,6 +150,25 @@ export default function CategoryScreen() {
                 className="flex-shrink-0 px-5 h-9 rounded-full text-xs font-semibold transition-all"
                 style={{ background: activeCat === c.id ? C.navy : C.bgSoft, color: activeCat === c.id ? C.gold : C.navy }}>
                 {c.name}
+              </button>
+            ))}
+          </div>
+          {/* Desktop gender toggle */}
+          <div className="flex items-center gap-2 px-8 pb-4">
+            <span className="text-xs font-semibold uppercase tracking-wider mr-1" style={{ color: C.mutedDark }}>For:</span>
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'men', label: 'Men' },
+              { key: 'women', label: 'Women' },
+            ].map(({ key, label }) => (
+              <button key={key} onClick={() => setGender(key)}
+                className="px-5 h-9 rounded-full text-xs font-semibold transition-all"
+                style={{
+                  background: gender === key ? C.navy : '#fff',
+                  color: gender === key ? C.gold : C.navy,
+                  border: gender === key ? 'none' : `1.5px solid #e0e0e0`,
+                }}>
+                {label}
               </button>
             ))}
           </div>

@@ -9,14 +9,19 @@ export function whatsappUrl(number, message) {
 }
 
 // Build a single-product inquiry message
-export function buildProductInquiry({ brandName = 'Time to Time Shopping', product, variant, qty, currency = '₹' }) {
-  return `Hi ${brandName}! 👋\n\nI'd like to order:\n\n*${product.name}*\nVariant: ${variant || 'Standard'}\nQty: ${qty}\nPrice: ${formatPrice(product.price * qty, currency)}\n\nPlease confirm availability. Thank you!`;
+export function buildProductInquiry({ brandName = 'Time to Time Shopping', product, variant, qty, currency = '₹', size = '', color = '' }) {
+  const opts = [variant, size && `Size: ${size}`, color && `Color: ${color}`].filter(Boolean);
+  const optsLine = opts.length ? `\nVariant: ${opts.join(' | ')}` : '';
+  return `Hi ${brandName}! 👋\n\nI'd like to order:\n\n*${product.name}*${optsLine}\nQty: ${qty}\nPrice: ${formatPrice(product.price * qty, currency)}\n\nPlease confirm availability. Thank you!`;
 }
 
 // Build a complete order message for checkout WhatsApp send
 export function buildOrderMessage({ orderId, customer, lines, subtotal, shipping, total, currency = '₹' }) {
   const itemList = lines
-    .map(l => `• ${l.product.name} (${l.variant || 'Std'}) × ${l.qty} = ${formatPrice(l.product.price * l.qty, currency)}`)
+    .map(l => {
+      const opts = [l.variant, l.size && `Size: ${l.size}`, l.color && `Color: ${l.color}`].filter(Boolean);
+      return `• ${l.product.name}${opts.length ? ` (${opts.join(' | ')})` : ''} × ${l.qty} = ${formatPrice(l.product.price * l.qty, currency)}`;
+    })
     .join('\n');
   return [
     `🛍️ *NEW ORDER #${orderId}*`,

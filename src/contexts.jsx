@@ -120,19 +120,29 @@ export function StoreProvider({ children }) {
   useEffect(() => { if (!loading) db.set('favorites', favorites); }, [favorites, loading]);
 
   // Cart ops
-  const addToCart = (productId, variant, qty = 1) => {
+  const addToCart = (productId, variant, qty = 1, size = '', color = '') => {
     setCart(c => {
-      const found = c.find(i => i.productId === productId && i.variant === variant);
+      const found = c.find(i =>
+        i.productId === productId && i.variant === variant &&
+        (i.size || '') === size && (i.color || '') === color
+      );
       if (found) return c.map(i => i === found ? { ...i, qty: i.qty + qty } : i);
-      return [...c, { productId, variant, qty }];
+      return [...c, { productId, variant, qty, size, color }];
     });
   };
-  const updateQty = (productId, variant, qty) => {
-    if (qty <= 0) return removeFromCart(productId, variant);
-    setCart(c => c.map(i => i.productId === productId && i.variant === variant ? { ...i, qty } : i));
+  const updateQty = (productId, variant, qty, size = '', color = '') => {
+    if (qty <= 0) return removeFromCart(productId, variant, size, color);
+    setCart(c => c.map(i =>
+      i.productId === productId && i.variant === variant &&
+      (i.size || '') === size && (i.color || '') === color
+        ? { ...i, qty } : i
+    ));
   };
-  const removeFromCart = (productId, variant) =>
-    setCart(c => c.filter(i => !(i.productId === productId && i.variant === variant)));
+  const removeFromCart = (productId, variant, size = '', color = '') =>
+    setCart(c => c.filter(i =>
+      !(i.productId === productId && i.variant === variant &&
+        (i.size || '') === size && (i.color || '') === color)
+    ));
   const clearCart = () => setCart([]);
 
   // Favorites

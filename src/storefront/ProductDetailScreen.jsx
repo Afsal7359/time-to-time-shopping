@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, ShoppingBag, Heart, ChevronLeft, ChevronRight,
   Star, Minus, Plus, MessageCircle, AlertCircle,
@@ -16,8 +16,21 @@ export default function ProductDetailScreen() {
   const product = products.find(p => p.id === route.params.id);
   const [imgIdx, setImgIdx] = useState(0);
   const [variant, setVariant] = useState(product?.variants?.[0] || '');
+  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0] || '');
+  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0] || '');
   const [qty, setQty] = useState(1);
   const [showFullDesc, setShowFullDesc] = useState(false);
+  const autoScrollRef = useRef(null);
+  const touchStartX = useRef(null);
+
+  // Auto-scroll images every 3 seconds (must be before early return for hooks rules)
+  useEffect(() => {
+    if (!product || product.images.length <= 1) return;
+    autoScrollRef.current = setInterval(() => {
+      setImgIdx(i => (i + 1) % product.images.length);
+    }, 3000);
+    return () => clearInterval(autoScrollRef.current);
+  }, [product?.id, product?.images.length]);
 
   if (!product) {
     return (
@@ -32,19 +45,35 @@ export default function ProductDetailScreen() {
   const off = product.mrp > product.price ? Math.round((1 - product.price / product.mrp) * 100) : 0;
   const isFav = favorites.includes(product.id);
 
-  const handleAdd = () => { addToCart(product.id, variant, qty); toast(`Added ${qty} × ${product.name}`); };
-  const handleBuyNow = () => { addToCart(product.id, variant, qty); navigate('cart'); };
+  const resetAutoScroll = () => {
+    if (product.images.length <= 1) return;
+    clearInterval(autoScrollRef.current);
+    autoScrollRef.current = setInterval(() => {
+      setImgIdx(i => (i + 1) % product.images.length);
+    }, 3000);
+  };
+
+  const prevImg = () => { setImgIdx(i => (i - 1 + product.images.length) % product.images.length); resetAutoScroll(); };
+  const nextImg = () => { setImgIdx(i => (i + 1) % product.images.length); resetAutoScroll(); };
+
+  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const delta = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(delta) > 40) { if (delta > 0) nextImg(); else prevImg(); }
+    touchStartX.current = null;
+  };
+
+  const handleAdd = () => { addToCart(product.id, variant, qty, selectedSize, selectedColor); toast(`Added ${qty} × ${product.name}`); };
+  const handleBuyNow = () => { addToCart(product.id, variant, qty, selectedSize, selectedColor); navigate('cart'); };
   const handleWhatsapp = () => {
-    const msg = buildProductInquiry({ brandName: settings.brandName, product, variant, qty, currency: settings.currency });
+    const msg = buildProductInquiry({ brandName: settings.brandName, product, variant, qty, currency: settings.currency, size: selectedSize, color: selectedColor });
     window.open(whatsappUrl(settings.whatsappNumber, msg), '_blank');
   };
 
   const variantLabel = product.variants?.[0]?.match(/\d+mm/) ? 'Case Size' :
     product.variants?.[0]?.match(/Size/) ? 'Ring Size' :
     isNaN(product.variants?.[0]) ? 'Colour' : 'Size';
-
-  const prevImg = () => setImgIdx(i => (i - 1 + product.images.length) % product.images.length);
-  const nextImg = () => setImgIdx(i => (i + 1) % product.images.length);
 
   return (
     <>
@@ -73,7 +102,8 @@ export default function ProductDetailScreen() {
 
           {/* Image carousel — part of the scroll flow */}
           <div className="relative mx-5 mb-0 rounded-3xl overflow-hidden"
-            style={{ aspectRatio: '1/1.05', background: C.navyLight }}>
+            style={{ aspectRatio: '1/1.05', background: C.navyLight }}
+            onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
             <img src={product.images[imgIdx]} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
             {product.images.length > 1 && (
               <>
@@ -122,6 +152,30 @@ export default function ProductDetailScreen() {
                     <button key={v} onClick={() => setVariant(v)}
                       className="px-4 h-10 rounded-xl text-sm font-semibold transition-all"
                       style={{ background: variant === v ? C.navy : '#fff', color: variant === v ? C.gold : C.navy, border: variant === v ? 'none' : '1.5px solid #e5e5e5' }}>{v}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {product.sizes?.length > 0 && (
+              <div className="mb-5">
+                <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: C.mutedDark }}>Size</p>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map(s => (
+                    <button key={s} onClick={() => setSelectedSize(s)}
+                      className="px-4 h-10 rounded-xl text-sm font-semibold transition-all"
+                      style={{ background: selectedSize === s ? C.navy : '#fff', color: selectedSize === s ? C.gold : C.navy, border: selectedSize === s ? 'none' : '1.5px solid #e5e5e5' }}>{s}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {product.colors?.length > 0 && (
+              <div className="mb-5">
+                <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: C.mutedDark }}>Color</p>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors.map(col => (
+                    <button key={col} onClick={() => setSelectedColor(col)}
+                      className="px-4 h-10 rounded-xl text-sm font-semibold transition-all"
+                      style={{ background: selectedColor === col ? C.navy : '#fff', color: selectedColor === col ? C.gold : C.navy, border: selectedColor === col ? 'none' : '1.5px solid #e5e5e5' }}>{col}</button>
                   ))}
                 </div>
               </div>
@@ -190,7 +244,8 @@ export default function ProductDetailScreen() {
                 </button>
               </div>
             </div>
-            <div className="flex-1 relative overflow-hidden">
+            <div className="flex-1 relative overflow-hidden"
+              onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
               <img src={product.images[imgIdx]} alt={product.name}
                 className="w-full h-full object-contain p-10" loading="lazy"
                 style={{ background: C.navyCard }} />
@@ -255,6 +310,30 @@ export default function ProductDetailScreen() {
                       <button key={v} onClick={() => setVariant(v)}
                         className="px-5 h-11 rounded-xl text-sm font-semibold transition-all"
                         style={{ background: variant === v ? C.navy : '#fff', color: variant === v ? C.gold : C.navy, border: variant === v ? 'none' : '1.5px solid #e0e0e0' }}>{v}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {product.sizes?.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-sm font-bold uppercase tracking-wider mb-3" style={{ color: C.mutedDark }}>Size</p>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.map(s => (
+                      <button key={s} onClick={() => setSelectedSize(s)}
+                        className="px-5 h-11 rounded-xl text-sm font-semibold transition-all"
+                        style={{ background: selectedSize === s ? C.navy : '#fff', color: selectedSize === s ? C.gold : C.navy, border: selectedSize === s ? 'none' : '1.5px solid #e0e0e0' }}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {product.colors?.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-sm font-bold uppercase tracking-wider mb-3" style={{ color: C.mutedDark }}>Color</p>
+                  <div className="flex flex-wrap gap-2">
+                    {product.colors.map(col => (
+                      <button key={col} onClick={() => setSelectedColor(col)}
+                        className="px-5 h-11 rounded-xl text-sm font-semibold transition-all"
+                        style={{ background: selectedColor === col ? C.navy : '#fff', color: selectedColor === col ? C.gold : C.navy, border: selectedColor === col ? 'none' : '1.5px solid #e0e0e0' }}>{col}</button>
                     ))}
                   </div>
                 </div>
