@@ -1,9 +1,71 @@
-import React, { useState } from 'react';
-import { Plus as PlusIcon, Edit2, Trash2, Save } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plus as PlusIcon, Edit2, Trash2, Save, Upload, Loader2 } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useToast } from '../contexts';
+import { uploadToCloudinary, cloudinaryEnabled } from '../firebase';
 import { PrimaryButton, GhostButton, Modal, Input, Select } from '../ui';
 import AdminShell from './AdminShell';
+
+function BannerImageInput({ value, onChange }) {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef();
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      onChange(url);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+        style={{ color: C.mutedDark }}>
+        Banner Image
+        {!cloudinaryEnabled && (
+          <span className="ml-2 normal-case text-[10px] px-2 py-0.5 rounded-full font-normal"
+            style={{ background: '#fef3c7', color: '#92400e' }}>
+            Upload disabled — Cloudinary not configured
+          </span>
+        )}
+      </label>
+      <div className="flex gap-2 items-center">
+        <input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="Paste image URL…"
+          className="flex-1 px-3 py-2 rounded-lg border text-xs outline-none min-w-0"
+          style={{ borderColor: '#e5e5e5', background: '#fafafa' }}
+        />
+        <input type="file" accept="image/*" ref={fileRef} className="hidden" onChange={handleFile} />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          title={cloudinaryEnabled ? 'Upload from file' : 'Configure Cloudinary in .env to enable uploads'}
+          className="h-9 px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 flex-shrink-0 transition-colors disabled:opacity-50"
+          style={{ borderColor: '#d1d5db', color: C.navy, background: '#fff' }}
+        >
+          {uploading
+            ? <><Loader2 size={12} className="animate-spin" /> Uploading…</>
+            : <><Upload size={12} /> Upload</>}
+        </button>
+      </div>
+      {value && (
+        <img src={value} alt="" className="mt-2 w-full h-32 rounded-xl object-cover"
+          onError={e => { e.target.style.display = 'none'; }} />
+      )}
+    </div>
+  );
+}
 
 function BannerForm({ initial, categories, onCancel, onSave }) {
   const [form, setForm] = useState({
@@ -25,9 +87,7 @@ function BannerForm({ initial, categories, onCancel, onSave }) {
       <Select label="Links to Category" value={form.categoryId}
         onChange={e => setForm({ ...form, categoryId: e.target.value })}
         options={categories.map(c => ({ value: c.id, label: c.name }))}/>
-      <Input label="Image URL" value={form.image}
-        onChange={e => setForm({ ...form, image: e.target.value })}/>
-      {form.image && <img src={form.image} alt="" className="w-full h-32 rounded-xl object-cover"/>}
+      <BannerImageInput value={form.image} onChange={val => setForm({ ...form, image: val })} />
       <label className="flex items-center gap-2 text-sm cursor-pointer">
         <input type="checkbox" checked={form.active}
           onChange={e => setForm({ ...form, active: e.target.checked })}/>

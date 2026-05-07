@@ -7,7 +7,6 @@ import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { IconButton, Empty, PrimaryButton } from '../ui';
 import { formatPrice } from '../utils';
-import StatusBar from './StatusBar';
 import BottomNav from './BottomNav';
 
 export default function CartScreen() {
@@ -103,7 +102,6 @@ export default function CartScreen() {
     <>
       {/* ════════════════ MOBILE LAYOUT ════════════════ */}
       <div className="md:hidden h-full flex flex-col relative overflow-hidden">
-        <StatusBar />
         <div className="flex items-center justify-between px-5 pt-3 pb-3 relative flex-shrink-0">
           <IconButton onClick={back}><ArrowLeft size={18} style={{ color: C.navy }} /></IconButton>
           <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-bold" style={{ color: C.navy }}>

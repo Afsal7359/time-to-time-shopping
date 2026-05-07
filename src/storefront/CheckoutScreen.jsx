@@ -6,7 +6,6 @@ import { C } from '../data';
 import { useStore, useRoute, useToast } from '../contexts';
 import { PrimaryButton, IconButton } from '../ui';
 import { formatPrice, whatsappUrl, buildOrderMessage } from '../utils';
-import StatusBar from './StatusBar';
 
 /* ── Defined outside so React never remounts them ── */
 
@@ -131,7 +130,6 @@ export default function CheckoutScreen() {
     <>
       {/* ════════════════ MOBILE ════════════════ */}
       <div className="md:hidden h-full flex flex-col" style={{ background: '#fff' }}>
-        <StatusBar />
         <div className="flex-shrink-0 flex items-center justify-between px-5 pt-3 pb-3 relative border-b" style={{ borderColor: '#f0f0f0' }}>
           <IconButton onClick={back}><ArrowLeft size={18} style={{ color: C.navy }} /></IconButton>
           <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-bold" style={{ color: C.navy }}>Checkout</h1>

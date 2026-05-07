@@ -3,7 +3,6 @@ import { ArrowLeft, ShoppingBag, Search, X } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { IconButton, Empty } from '../ui';
-import StatusBar from './StatusBar';
 import BottomNav from './BottomNav';
 import ProductCard from './ProductCard';
 
@@ -33,7 +32,6 @@ export default function CategoryScreen() {
 
   return (
     <>
-      <StatusBar />
       <div className="flex-1 overflow-y-auto pb-28 md:pb-8">
 
         {/* ── Mobile header ── */}

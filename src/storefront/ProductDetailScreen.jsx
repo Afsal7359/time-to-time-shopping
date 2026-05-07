@@ -7,7 +7,6 @@ import { C } from '../data';
 import { useStore, useRoute, useToast } from '../contexts';
 import { IconButton, Empty, PrimaryButton } from '../ui';
 import { formatPrice, whatsappUrl, buildProductInquiry } from '../utils';
-import StatusBar from './StatusBar';
 
 export default function ProductDetailScreen() {
   const { products, addToCart, settings, favorites, toggleFav } = useStore();
@@ -35,7 +34,6 @@ export default function ProductDetailScreen() {
   if (!product) {
     return (
       <>
-        <StatusBar />
         <Empty icon={AlertCircle} title="Product not found"
           action={<PrimaryButton onClick={back}>Go back</PrimaryButton>} />
       </>
@@ -79,7 +77,6 @@ export default function ProductDetailScreen() {
     <>
       {/* ════════════════ MOBILE LAYOUT ════════════════ */}
       <div className="md:hidden h-full flex flex-col" style={{ background: C.navy }}>
-        <StatusBar light />
 
         {/* Fixed header strip */}
         <div className="flex-shrink-0 flex items-center justify-between px-5 pt-3 pb-3 relative">

@@ -4,7 +4,6 @@ import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { PrimaryButton, GhostButton } from '../ui';
 import { formatPrice } from '../utils';
-import StatusBar from './StatusBar';
 
 export default function OrderSuccessScreen() {
   const { route, navigate } = useRoute();
@@ -13,7 +12,6 @@ export default function OrderSuccessScreen() {
 
   return (
     <>
-      <StatusBar/>
       <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center p-8 md:p-16 text-center">
         <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6 animate-zoom-in"
           style={{ background: `radial-gradient(circle, ${C.gold} 0%, ${C.goldDark} 100%)` }}>

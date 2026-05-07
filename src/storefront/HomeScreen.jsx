@@ -6,7 +6,6 @@ import {
 import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { IconButton, LogoFull } from '../ui';
-import StatusBar from './StatusBar';
 import BottomNav from './BottomNav';
 import ProductCard from './ProductCard';
 
@@ -28,7 +27,6 @@ export default function HomeScreen() {
 
   return (
     <>
-      <StatusBar />
       <div className="flex-1 overflow-y-auto pb-28 md:pb-12">
 
         {/* Mobile header */}

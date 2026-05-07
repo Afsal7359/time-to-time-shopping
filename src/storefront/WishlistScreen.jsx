@@ -3,7 +3,6 @@ import { Heart } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { Empty, PrimaryButton } from '../ui';
-import StatusBar from './StatusBar';
 import BottomNav from './BottomNav';
 import ProductCard from './ProductCard';
 
@@ -14,7 +13,6 @@ export default function WishlistScreen() {
 
   return (
     <>
-      <StatusBar />
       <div className="flex-1 overflow-y-auto pb-28 md:pb-8">
         <div className="px-5 md:px-8 pt-3 pb-4">
           <h1 className="text-2xl font-bold" style={{ color: C.navy, fontFamily: 'Georgia, serif' }}>
