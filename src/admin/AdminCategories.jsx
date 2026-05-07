@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Plus as PlusIcon, Trash2, Save } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plus as PlusIcon, Trash2, Save, Upload, Loader2 } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useToast } from '../contexts';
+import { uploadToCloudinary, cloudinaryEnabled } from '../firebase';
 import { PrimaryButton, GhostButton, Modal, Input } from '../ui';
 import AdminShell from './AdminShell';
 
@@ -11,16 +12,60 @@ function CategoryForm({ initial, onCancel, onSave }) {
     icon: initial?.icon || '🛍️',
     image: initial?.image || '',
   });
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef();
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setForm(f => ({ ...f, image: url }));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
   return (
     <div className="space-y-3">
       <Input label="Name *" value={form.name}
         onChange={e => setForm({ ...form, name: e.target.value })}/>
       <Input label="Icon emoji" value={form.icon}
         onChange={e => setForm({ ...form, icon: e.target.value })} placeholder="🛍️"/>
-      <Input label="Image URL" value={form.image}
-        onChange={e => setForm({ ...form, image: e.target.value })}
-        placeholder="https://..."/>
-      {form.image && <img src={form.image} alt="" className="w-24 h-24 rounded-xl object-cover"/>}
+      <div>
+        <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+          style={{ color: C.mutedDark }}>Image</label>
+        <div className="flex gap-2 items-center">
+          <input
+            value={form.image}
+            onChange={e => setForm({ ...form, image: e.target.value })}
+            placeholder="Paste image URL…"
+            className="flex-1 px-3 py-2 rounded-lg border text-xs outline-none min-w-0"
+            style={{ borderColor: '#e5e5e5', background: '#fafafa' }}
+          />
+          <input type="file" accept="image/*" ref={fileRef} className="hidden" onChange={handleFile} />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            title={cloudinaryEnabled ? 'Upload from file' : 'Configure Cloudinary in .env to enable uploads'}
+            className="h-9 px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 flex-shrink-0 transition-colors disabled:opacity-50"
+            style={{ borderColor: '#d1d5db', color: C.navy, background: '#fff' }}
+          >
+            {uploading
+              ? <><Loader2 size={12} className="animate-spin" /> Uploading…</>
+              : <><Upload size={12} /> Upload</>}
+          </button>
+          {form.image && (
+            <img src={form.image} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
+              onError={e => { e.target.style.display = 'none'; }} />
+          )}
+        </div>
+      </div>
       <div className="flex gap-2 pt-2">
         <GhostButton fullWidth onClick={onCancel}>Cancel</GhostButton>
         <PrimaryButton fullWidth icon={Save} onClick={() => form.name && onSave(form)}>Save</PrimaryButton>
