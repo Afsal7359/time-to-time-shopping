@@ -68,16 +68,20 @@ export function StoreProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [loadingMsg, setLoadingMsg] = useState('Loading store');
 
-  // Initial load — seed DB on very first run, then read everything from DB
+  // Initial load — seed only on genuine first run (products doc missing in DB)
   useEffect(() => {
     (async () => {
-      // Minimum visible loading time so the screen is always seen
       const minDisplay = new Promise(r => setTimeout(r, 1200));
-
       setLoadingMsg('Connecting to database');
-      const seeded = await db.get('seeded', false);
 
-      if (!seeded) {
+      // Check if the store has real data by looking at the products collection.
+      // Using null as sentinel: null = doc truly missing (first run).
+      // If Firebase is temporarily unreachable, db.get also returns null — in
+      // that case the seed writes below will also fail gracefully (they fall back
+      // to localStorage) and Firestore data is left untouched.
+      const existingProducts = await db.get('products', null);
+
+      if (existingProducts === null) {
         setLoadingMsg('Setting up your store');
         await Promise.all([
           db.set('products',   SEED_PRODUCTS),
@@ -86,16 +90,14 @@ export function StoreProvider({ children }) {
           db.set('orders',     []),
           db.set('settings',   SEED_SETTINGS),
         ]);
-        await db.set('seeded', true);
       }
 
       setLoadingMsg('Loading products');
-      // All data comes from DB — no hardcoded fallbacks after seeding
       const [[p, c, b, o, s, ct, fv]] = await Promise.all([
         Promise.all([
-          db.get('products',   []),
-          db.get('categories', []),
-          db.get('banners',    []),
+          db.get('products',   SEED_PRODUCTS),
+          db.get('categories', SEED_CATEGORIES),
+          db.get('banners',    SEED_BANNERS),
           db.get('orders',     []),
           db.get('settings',   SEED_SETTINGS),
           db.get('cart',       []),

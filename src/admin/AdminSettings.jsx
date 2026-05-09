@@ -1,40 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Save, RefreshCw } from 'lucide-react';
-import { C, SEED_PRODUCTS, SEED_CATEGORIES, SEED_BANNERS } from '../data';
+import { Save } from 'lucide-react';
+import { C } from '../data';
 import { useStore, useToast } from '../contexts';
 import { PrimaryButton, Input } from '../ui';
 import AdminShell from './AdminShell';
 
 export default function AdminSettings() {
-  const { settings, saveSettings, saveProducts, saveCategories, saveBanners } = useStore();
+  const { settings, saveSettings } = useStore();
   const toast = useToast();
   const [form, setForm] = useState(settings);
-  const [reseeding, setReseeding] = useState(false);
 
   useEffect(() => setForm(settings), [settings]);
 
   const handleSave = async () => {
     await saveSettings(form);
     toast('Settings saved');
-  };
-
-  const handleReseed = async () => {
-    if (!confirm(
-      'This will replace ALL products, categories, and banners with the default sample data.\n\nOrders and settings will NOT be changed.\n\nContinue?'
-    )) return;
-    setReseeding(true);
-    try {
-      await Promise.all([
-        saveProducts(SEED_PRODUCTS),
-        saveCategories(SEED_CATEGORIES),
-        saveBanners(SEED_BANNERS),
-      ]);
-      toast('Store data reset to defaults');
-    } catch {
-      toast('Reset failed', 'error');
-    } finally {
-      setReseeding(false);
-    }
   };
 
   return (
@@ -114,23 +94,6 @@ export default function AdminSettings() {
         </section>
 
         <PrimaryButton fullWidth icon={Save} onClick={handleSave}>Save All Settings</PrimaryButton>
-
-        <section className="bg-white rounded-2xl border p-5" style={{ borderColor: '#eee' }}>
-          <h3 className="text-base font-bold mb-1" style={{ color: C.navy }}>Data Management</h3>
-          <p className="text-xs mb-4" style={{ color: C.muted }}>
-            Reset store content to the built-in sample data. Useful for a fresh start or demo.
-            Orders and settings are not affected.
-          </p>
-          <button
-            onClick={handleReseed}
-            disabled={reseeding}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all disabled:opacity-50 hover:bg-red-50"
-            style={{ borderColor: '#fca5a5', color: '#dc2626' }}
-          >
-            <RefreshCw size={14} className={reseeding ? 'animate-spin' : ''} />
-            {reseeding ? 'Resetting…' : 'Reset to Default Seed Data'}
-          </button>
-        </section>
       </div>
     </AdminShell>
   );
