@@ -3,9 +3,9 @@ export const formatPrice = (n, sym = '₹') => `${sym}${Number(n).toLocaleString
 
 // Build a WhatsApp wa.me URL with a pre-formatted message
 export function whatsappUrl(number, message) {
-  const cleaned = String(number).replace(/\D/g, '');
+  const cleaned = String(number).replace(/\D/g, '').replace(/^0+/, '');
   const text = encodeURIComponent(message);
-  return `https://wa.me/${cleaned}?text=${text}`;
+  return `https://api.whatsapp.com/send?phone=${cleaned}&text=${text}`;
 }
 
 // Build a single-product inquiry message

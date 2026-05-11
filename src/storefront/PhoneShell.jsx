@@ -3,7 +3,6 @@ import { Home, Heart, ShoppingBag, Package, Search } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { LogoFull } from '../ui';
-import { whatsappUrl } from '../utils';
 
 function DesktopNav() {
   const { route, navigate } = useRoute();
@@ -104,11 +103,17 @@ function DesktopNav() {
 function WhatsAppFAB() {
   const { settings } = useStore();
   if (!settings.whatsappAvailable || !settings.whatsappNumber) return null;
+
+  const number = String(settings.whatsappNumber).replace(/\D/g, '').replace(/^0+/, '');
+  if (!number) return null;
+
+  const handleClick = () => {
+    window.open(`https://api.whatsapp.com/send?phone=${number}`, '_blank');
+  };
+
   return (
-    <a
-      href={whatsappUrl(settings.whatsappNumber, `Hi ${settings.brandName || ''}! 👋 I need help.`)}
-      target="_blank"
-      rel="noopener noreferrer"
+    <button
+      onClick={handleClick}
       className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95"
       style={{ background: '#fff' }}
       title="Chat on WhatsApp"
@@ -117,7 +122,7 @@ function WhatsAppFAB() {
         <path d="M24 4C12.954 4 4 12.954 4 24c0 3.552.945 6.89 2.596 9.77L4 44l10.476-2.558A19.9 19.9 0 0024 44c11.046 0 20-8.954 20-20S35.046 4 24 4z" fill="#25D366"/>
         <path d="M35.07 28.878c-.49-.245-2.9-1.432-3.35-1.595-.45-.163-.778-.245-1.106.245-.327.49-1.27 1.595-1.556 1.922-.286.327-.572.368-1.063.123-2.876-1.438-4.762-2.567-6.654-5.822-.503-.863.503-.802 1.437-2.669.163-.327.082-.613-.041-.858-.123-.245-1.106-2.663-1.515-3.648-.4-.958-.806-.826-1.106-.842-.286-.014-.613-.018-.94-.018-.327 0-.858.123-1.308.613-.45.49-1.718 1.678-1.718 4.095 0 2.417 1.759 4.752 2.004 5.08.245.326 3.461 5.285 8.39 7.414 3.12 1.348 4.344 1.463 5.904 1.232.95-.14 2.9-1.186 3.31-2.332.41-1.146.41-2.128.287-2.332-.118-.204-.45-.327-.94-.572z" fill="#fff"/>
       </svg>
-    </a>
+    </button>
   );
 }
 

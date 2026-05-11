@@ -39,10 +39,13 @@ export default function AdminSettings() {
             WhatsApp number receives order messages
           </p>
           <div className="space-y-3">
-            <Input label="WhatsApp Number (with country code, no +)"
+            <Input label="WhatsApp Number (with country code, no + or spaces)"
               value={form.whatsappNumber}
               onChange={e => setForm({ ...form, whatsappNumber: e.target.value.replace(/\D/g, '') })}
-              placeholder="919999999999"/>
+              placeholder="97433526308"/>
+            <p className="text-xs" style={{ color: C.muted }}>
+              Qatar example: <strong style={{ color: C.navy }}>97433526308</strong> &nbsp;·&nbsp; Current saved: <strong style={{ color: form.whatsappNumber ? C.navy : '#ef4444' }}>{form.whatsappNumber || 'not set'}</strong>
+            </p>
             <Input label="Store Phone (display only)" value={form.storePhone}
               onChange={e => setForm({ ...form, storePhone: e.target.value })}/>
             <Input label="Email" value={form.storeEmail}

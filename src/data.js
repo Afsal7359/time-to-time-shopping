@@ -129,7 +129,7 @@ export const SEED_BANNERS = [
 export const SEED_SETTINGS = {
   brandName: 'Time to Time Shopping',
   tagline: 'Luxury in every moment',
-  whatsappNumber: '919999999999',
+  whatsappNumber: '97433526308',
   storePhone: '+91 99999 99999',
   storeEmail: 'orders@timetotimeshopping.com',
   currency: '₹',

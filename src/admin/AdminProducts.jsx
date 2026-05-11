@@ -66,9 +66,9 @@ function ImageRow({ img, onChange, onRemove }) {
 
 function ProductEditor({ open, product, categories, onClose, onSave }) {
   const [form, setForm] = useState({
-    name: '', categoryId: categories[0]?.id || '', price: '', mrp: '', stock: 0,
+    name: '', categoryId: categories[0]?.id || '', subcategoryId: '', price: '', mrp: '', stock: 0,
     images: [''], description: '', variants: '', sizes: '', colors: '',
-    gender: '', badge: '', featured: false, rating: 4.5, reviews: 0,
+    badge: '', featured: false, rating: 4.5, reviews: 0,
   });
 
   useEffect(() => {
@@ -76,6 +76,7 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
       setForm({
         name: product.name || '',
         categoryId: product.categoryId || categories[0]?.id || '',
+        subcategoryId: product.subcategoryId || '',
         price: product.price || '',
         mrp: product.mrp || '',
         stock: product.stock ?? 0,
@@ -84,7 +85,6 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
         variants: (product.variants || []).join(', '),
         sizes: (product.sizes || []).join(', '),
         colors: (product.colors || []).join(', '),
-        gender: product.gender || '',
         badge: product.badge || '',
         featured: !!product.featured,
         rating: product.rating || 4.5,
@@ -98,6 +98,7 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
   const handleSubmit = () => {
     const data = {
       ...form,
+      subcategoryId: form.subcategoryId || '',
       price: Number(form.price) || 0,
       mrp: Number(form.mrp) || Number(form.price) || 0,
       stock: Number(form.stock) || 0,
@@ -125,19 +126,25 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
       <div className="space-y-4">
         <Input label="Product Name *" value={form.name}
           onChange={e => setForm({ ...form, name: e.target.value })}/>
-        <div className="grid grid-cols-2 gap-3">
-          <Select label="Category *" value={form.categoryId}
-            onChange={e => setForm({ ...form, categoryId: e.target.value })}
-            options={categories.map(c => ({ value: c.id, label: c.name }))}/>
-          <Select label="Gender (optional)" value={form.gender}
-            onChange={e => setForm({ ...form, gender: e.target.value })}
-            options={[
-              { value: '', label: 'All / Unspecified' },
-              { value: 'men', label: 'Men' },
-              { value: 'women', label: 'Women' },
-              { value: 'unisex', label: 'Unisex' },
-            ]}/>
-        </div>
+        {(() => {
+          const activeCat = categories.find(c => c.id === form.categoryId);
+          const subcats = activeCat?.subcategories || [];
+          if (subcats.length === 0) return (
+            <Select label="Category *" value={form.categoryId}
+              onChange={e => setForm({ ...form, categoryId: e.target.value, subcategoryId: '' })}
+              options={categories.map(c => ({ value: c.id, label: c.name }))}/>
+          );
+          return (
+            <div className="grid grid-cols-2 gap-3">
+              <Select label="Category *" value={form.categoryId}
+                onChange={e => setForm({ ...form, categoryId: e.target.value, subcategoryId: '' })}
+                options={categories.map(c => ({ value: c.id, label: c.name }))}/>
+              <Select label="Subcategory" value={form.subcategoryId}
+                onChange={e => setForm({ ...form, subcategoryId: e.target.value })}
+                options={[{ value: '', label: 'All / None' }, ...subcats.map(s => ({ value: s.id, label: s.name }))]}/>
+            </div>
+          );
+        })()}
         <Input label="Badge (e.g. New, Sale)" value={form.badge}
           onChange={e => setForm({ ...form, badge: e.target.value })}/>
         <div className="grid grid-cols-3 gap-3">
