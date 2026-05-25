@@ -147,7 +147,7 @@ function SubcategoryModal({ category, onClose, onSave }) {
 
 /* ── Main page ── */
 export default function AdminCategories() {
-  const { categories, products, saveCategories } = useStore();
+  const { categories, products, saveCategories, softDelete } = useStore();
   const toast = useToast();
   const [editing, setEditing] = useState(null);
   const [managingSubs, setManagingSubs] = useState(null);
@@ -178,8 +178,8 @@ export default function AdminCategories() {
     const used = products.filter(p => p.categoryId === id).length;
     if (used > 0) return alert(`Can't delete — ${used} products use this category. Reassign them first.`);
     if (!confirm('Delete this category?')) return;
-    await saveCategories(categories.filter(c => c.id !== id));
-    toast('Category deleted');
+    await softDelete('category', id);
+    toast('Category deleted — restore from Dashboard › Recently Deleted');
   };
 
   return (

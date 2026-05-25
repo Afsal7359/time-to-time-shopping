@@ -8,7 +8,7 @@ import { useStore, useRoute } from '../contexts';
 import { LogoFull } from '../ui';
 
 export default function AdminShell({ active, children }) {
-  const { setAdminAuth } = useStore();
+  const { signOut } = useStore();
   const { navigate } = useRoute();
   const [mobOpen, setMobOpen] = useState(false);
 
@@ -21,8 +21,8 @@ export default function AdminShell({ active, children }) {
     { id: 'adminSettings',   icon: Settings,        label: 'Settings' },
   ];
 
-  const logout = () => {
-    setAdminAuth(false);
+  const logout = async () => {
+    await signOut();
     navigate('home');
   };
 

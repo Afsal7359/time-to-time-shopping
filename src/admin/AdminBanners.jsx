@@ -102,7 +102,7 @@ function BannerForm({ initial, categories, onCancel, onSave }) {
 }
 
 export default function AdminBanners() {
-  const { banners, categories, saveBanners } = useStore();
+  const { banners, categories, saveBanners, softDelete } = useStore();
   const toast = useToast();
   const [editing, setEditing] = useState(null);
 
@@ -117,8 +117,8 @@ export default function AdminBanners() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this banner?')) return;
-    await saveBanners(banners.filter(b => b.id !== id));
-    toast('Banner deleted');
+    await softDelete('banner', id);
+    toast('Banner deleted — restore from Dashboard › Recently Deleted');
   };
 
   const toggle = async (id) => {

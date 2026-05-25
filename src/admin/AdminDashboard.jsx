@@ -1,15 +1,28 @@
 import React from 'react';
 import {
-  IndianRupee, ShoppingBag, AlertCircle, Tag, Package,
+  IndianRupee, ShoppingBag, AlertCircle, Tag, Package, RotateCcw, Trash2,
 } from 'lucide-react';
 import { C, STATUS_COLORS } from '../data';
-import { useStore, useRoute } from '../contexts';
+import { useStore, useRoute, useToast } from '../contexts';
 import { formatPrice } from '../utils';
 import AdminShell from './AdminShell';
 
+const KIND_LABEL = { product: 'Product', banner: 'Banner', category: 'Category' };
+
+function formatAgo(ts) {
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 export default function AdminDashboard() {
-  const { orders, products, settings } = useStore();
+  const { orders, products, settings, trash, restoreFromTrash, purgeTrashEntry } = useStore();
   const { navigate } = useRoute();
+  const toast = useToast();
 
   const totalRevenue = orders.filter(o => o.status !== 'cancelled').reduce((a, o) => a + o.total, 0);
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
@@ -96,6 +109,50 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {trash.length > 0 && (
+        <div className="bg-white rounded-2xl p-4 md:p-5 border mt-6" style={{ borderColor: '#eee' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-bold" style={{ color: C.navy }}>Recently Deleted</h3>
+            <span className="text-xs" style={{ color: C.muted }}>{trash.length} item{trash.length > 1 ? 's' : ''}</span>
+          </div>
+          <div className="space-y-2">
+            {trash.slice(0, 10).map(t => (
+              <div key={t.trashId}
+                className="flex items-center justify-between p-3 rounded-xl"
+                style={{ background: C.bgSoft }}>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold truncate" style={{ color: C.navy }}>
+                    {t.item?.name || '(unnamed)'}
+                  </div>
+                  <div className="text-xs" style={{ color: C.muted }}>
+                    {KIND_LABEL[t.kind] || t.kind} · {formatAgo(t.deletedAt)}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                  <button
+                    onClick={async () => { await restoreFromTrash(t.trashId); toast(`${KIND_LABEL[t.kind] || 'Item'} restored`); }}
+                    className="flex items-center gap-1 text-xs font-semibold px-3 py-2 rounded-lg"
+                    style={{ background: C.navy, color: C.gold }}>
+                    <RotateCcw size={14}/> Restore
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Permanently delete this item? This cannot be undone.')) return;
+                      await purgeTrashEntry(t.trashId);
+                      toast('Permanently removed');
+                    }}
+                    className="p-2 rounded-lg"
+                    style={{ background: '#fee', color: '#c00' }}
+                    title="Delete permanently">
+                    <Trash2 size={14}/>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </AdminShell>
   );
 }

@@ -1,7 +1,19 @@
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { Check, AlertCircle } from 'lucide-react';
-import { db } from './firebase';
-import { C, SEED_PRODUCTS, SEED_CATEGORIES, SEED_BANNERS, SEED_SETTINGS } from './data';
+import {
+  db, onAuthChanged, signInAdmin, signOutAdmin, changeAdminPassword,
+} from './firebase';
+import { C, DEFAULT_SETTINGS } from './data';
+
+// cart + favorites live in localStorage only (per-browser, no server write).
+// This removes the need for public Firestore writes on those keys.
+const LOCAL_CART_KEY = 'tts:cart';
+const LOCAL_FAV_KEY  = 'tts:favorites';
+const readLocalJSON = (k, fb) => {
+  try { const v = localStorage.getItem(k); return v == null ? fb : JSON.parse(v); }
+  catch { return fb; }
+};
+const writeLocalJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
 
 /* ════════════════════════════════════════════════════════════════════
@@ -51,75 +63,97 @@ export function StoreProvider({ children }) {
   const [categories, setCategories] = useState([]);
   const [banners, setBanners] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [settings, setSettings] = useState(SEED_SETTINGS);
-  const [cart, setCart] = useState([]);
-  const [favorites, setFavorites] = useState([]);
-  // Persist admin auth across page reloads (sessionStorage clears when tab closes)
-  const [adminAuth, setAdminAuthState] = useState(() => {
-    try { return sessionStorage.getItem('tts:adminAuth') === '1'; } catch { return false; }
-  });
-  const setAdminAuth = useCallback((val) => {
-    setAdminAuthState(val);
-    try {
-      if (val) sessionStorage.setItem('tts:adminAuth', '1');
-      else sessionStorage.removeItem('tts:adminAuth');
-    } catch {}
-  }, []);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [cart, setCart] = useState(() => readLocalJSON(LOCAL_CART_KEY, []));
+  const [favorites, setFavorites] = useState(() => readLocalJSON(LOCAL_FAV_KEY, []));
+  const [trash, setTrash] = useState([]); // [{ trashId, kind, item, deletedAt }]
+  // Auth state is driven by Firebase. adminAuth is true iff a Firebase
+  // user is signed in. We don't track our own session flag — Firebase
+  // persists the session itself (browserLocalPersistence).
+  const [currentUser, setCurrentUser] = useState(null);
+  const adminAuth = !!currentUser;
   const [loading, setLoading] = useState(true);
   const [loadingMsg, setLoadingMsg] = useState('Loading store');
 
-  // Initial load — seed only on genuine first run (products doc missing in DB)
+  // Subscribe to Firebase auth state changes once.
+  useEffect(() => {
+    const unsub = onAuthChanged((u) => setCurrentUser(u));
+    return unsub;
+  }, []);
+
+  const signIn = useCallback(async (email, password) => {
+    const user = await signInAdmin(email, password);
+    return user;
+  }, []);
+  const signOut = useCallback(async () => {
+    await signOutAdmin();
+  }, []);
+  const changePassword = useCallback(async (currentPwd, newPwd) => {
+    await changeAdminPassword(currentPwd, newPwd);
+  }, []);
+
+  // Initial load. There is no seed/demo data — a fresh install starts
+  // empty and the admin populates it. The only protective behavior here
+  // is: if a read errors, do NOT proceed (and definitely do not write
+  // anything). Surface the failure so the operator can fix the
+  // connection/credentials before the app touches live data.
   useEffect(() => {
     (async () => {
       const minDisplay = new Promise(r => setTimeout(r, 1200));
       setLoadingMsg('Connecting to database');
 
-      // Check if the store has real data by looking at the products collection.
-      // Using null as sentinel: null = doc truly missing (first run).
-      // If Firebase is temporarily unreachable, db.get also returns null — in
-      // that case the seed writes below will also fail gracefully (they fall back
-      // to localStorage) and Firestore data is left untouched.
-      const existingProducts = await db.get('products', null);
+      // Probe products with one retry. getRaw distinguishes "doc missing"
+      // from "read failed" so a transient error can never look like a
+      // fresh install.
+      const probe = async (key) => {
+        const first = await db.getRaw(key);
+        if (!first.error) return first;
+        await new Promise(r => setTimeout(r, 800));
+        return db.getRaw(key);
+      };
 
-      if (existingProducts === null) {
-        setLoadingMsg('Setting up your store');
-        await Promise.all([
-          db.set('products',   SEED_PRODUCTS),
-          db.set('categories', SEED_CATEGORIES),
-          db.set('banners',    SEED_BANNERS),
-          db.set('orders',     []),
-          db.set('settings',   SEED_SETTINGS),
-        ]);
+      // Note: cart and favorites are NOT loaded from Firestore — they live
+      // in localStorage (initialised via useState above) so we never need
+      // public write access to those keys.
+      const probes = await Promise.all(
+        ['products', 'categories', 'banners', 'orders', 'settings', 'trash']
+          .map(k => probe(k).then(r => [k, r]))
+      );
+
+      const errored = probes.find(([, r]) => r.error);
+      if (errored) {
+        console.error(
+          'Aborting startup: could not read from database. App will not ' +
+          'write any data until the connection is restored.',
+          errored
+        );
+        setLoadingMsg(
+          'Could not connect to the database. Please check your connection and refresh. ' +
+          '(No data has been changed.)'
+        );
+        return; // stay on loading screen rather than risk corruption
       }
 
-      setLoadingMsg('Loading products');
-      const [[p, c, b, o, s, ct, fv]] = await Promise.all([
-        Promise.all([
-          db.get('products',   SEED_PRODUCTS),
-          db.get('categories', SEED_CATEGORIES),
-          db.get('banners',    SEED_BANNERS),
-          db.get('orders',     []),
-          db.get('settings',   SEED_SETTINGS),
-          db.get('cart',       []),
-          db.get('favorites',  []),
-        ]),
-        minDisplay,
-      ]);
+      const byKey = Object.fromEntries(probes);
+      const val = (k, fallback) => byKey[k].exists ? byKey[k].value : fallback;
 
-      setProducts(p   ?? []);
-      setCategories(c ?? []);
-      setBanners(b    ?? []);
-      setOrders(o     ?? []);
-      setSettings({ ...SEED_SETTINGS, ...s });
-      setCart(ct      ?? []);
-      setFavorites(fv ?? []);
+      await minDisplay;
+
+      setProducts(val('products', []) ?? []);
+      setCategories(val('categories', []) ?? []);
+      setBanners(val('banners', []) ?? []);
+      setOrders(val('orders', []) ?? []);
+      setSettings({ ...DEFAULT_SETTINGS, ...(val('settings', {}) ?? {}) });
+      // cart/favorites already initialised from localStorage above.
+      setTrash(val('trash', []) ?? []);
       setLoading(false);
     })();
   }, []);
 
-  // Persist cart and favorites on change
-  useEffect(() => { if (!loading) db.set('cart', cart); }, [cart, loading]);
-  useEffect(() => { if (!loading) db.set('favorites', favorites); }, [favorites, loading]);
+  // Persist cart and favorites to localStorage on change (per-browser, no
+  // server write — eliminates the need for public Firestore write access).
+  useEffect(() => { if (!loading) writeLocalJSON(LOCAL_CART_KEY, cart); }, [cart, loading]);
+  useEffect(() => { if (!loading) writeLocalJSON(LOCAL_FAV_KEY, favorites); }, [favorites, loading]);
 
   // Cart ops
   const addToCart = (productId, variant, qty = 1, size = '', color = '') => {
@@ -156,7 +190,75 @@ export function StoreProvider({ children }) {
   const saveCategories = async (c) => { setCategories(c); await db.set('categories', c); };
   const saveBanners = async (b) => { setBanners(b); await db.set('banners', b); };
   const saveOrders = async (o) => { setOrders(o); await db.set('orders', o); };
-  const saveSettings = async (s) => { setSettings(s); await db.set('settings', s); };
+  const saveSettings = async (s) => {
+    // Defensive scrub: the old code persisted the admin password into the
+    // public settings doc. Auth now lives in Firebase Auth, so this field
+    // must never be written again — drop it on every save.
+    const { adminPassword: _drop, ...clean } = s || {};
+    setSettings(clean);
+    await db.set('settings', clean);
+  };
+
+  // Recoverable delete. Captures the full item into trash before removing it
+  // from its collection, so a mis-click can be reversed from the admin
+  // dashboard. Trash is capped at 50 entries (oldest evicted) to keep the
+  // doc small. kind ∈ 'product' | 'banner' | 'category'.
+  const TRASH_CAP = 50;
+  const softDelete = async (kind, id) => {
+    let removed = null;
+    if (kind === 'product') {
+      removed = products.find(x => x.id === id);
+      if (!removed) return;
+      await saveProducts(products.filter(x => x.id !== id));
+    } else if (kind === 'banner') {
+      removed = banners.find(x => x.id === id);
+      if (!removed) return;
+      await saveBanners(banners.filter(x => x.id !== id));
+    } else if (kind === 'category') {
+      removed = categories.find(x => x.id === id);
+      if (!removed) return;
+      await saveCategories(categories.filter(x => x.id !== id));
+    } else {
+      return;
+    }
+    const entry = {
+      trashId: `${kind}-${id}-${Date.now()}`,
+      kind,
+      item: removed,
+      deletedAt: Date.now(),
+    };
+    const next = [entry, ...trash].slice(0, TRASH_CAP);
+    setTrash(next);
+    await db.set('trash', next);
+  };
+
+  const restoreFromTrash = async (trashId) => {
+    const entry = trash.find(t => t.trashId === trashId);
+    if (!entry) return;
+    if (entry.kind === 'product') {
+      // Skip if an item with the same id was recreated in the meantime.
+      if (!products.some(x => x.id === entry.item.id)) {
+        await saveProducts([entry.item, ...products]);
+      }
+    } else if (entry.kind === 'banner') {
+      if (!banners.some(x => x.id === entry.item.id)) {
+        await saveBanners([entry.item, ...banners]);
+      }
+    } else if (entry.kind === 'category') {
+      if (!categories.some(x => x.id === entry.item.id)) {
+        await saveCategories([entry.item, ...categories]);
+      }
+    }
+    const next = trash.filter(t => t.trashId !== trashId);
+    setTrash(next);
+    await db.set('trash', next);
+  };
+
+  const purgeTrashEntry = async (trashId) => {
+    const next = trash.filter(t => t.trashId !== trashId);
+    setTrash(next);
+    await db.set('trash', next);
+  };
 
   // Place order
   const placeOrder = async (orderData) => {
@@ -183,10 +285,12 @@ export function StoreProvider({ children }) {
 
   return (
     <StoreCtx.Provider value={{
-      products, categories, banners, orders, settings, cart, favorites,
-      adminAuth, setAdminAuth, loading, loadingMsg,
+      products, categories, banners, orders, settings, cart, favorites, trash,
+      adminAuth, currentUser, signIn, signOut, changePassword,
+      loading, loadingMsg,
       addToCart, updateQty, removeFromCart, clearCart, toggleFav,
       saveProducts, saveCategories, saveBanners, saveOrders, saveSettings,
+      softDelete, restoreFromTrash, purgeTrashEntry,
       placeOrder,
     }}>
       {children}

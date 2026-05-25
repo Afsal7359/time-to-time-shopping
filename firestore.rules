@@ -2,12 +2,48 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // The app stores everything under /app/{key}
-    // Read: open to all (storefront needs to read products, banners, etc.)
-    // Write: open — admin password is enforced inside the app itself
-    match /app/{document} {
-      allow read, write: if true;
+    // Any signed-in Firebase Auth user is treated as an admin. The app
+    // never creates non-admin accounts, so account ownership IS the trust
+    // boundary. If you ever add public signup, switch this to a custom
+    // claim check (e.g. request.auth.token.admin == true) and set that
+    // claim with the Firebase Admin SDK when promoting a user.
+    function isAdmin() {
+      return request.auth != null;
     }
 
+    match /app/{document} {
+
+      // ── Reads ─────────────────────────────────────────────────────────
+      // Storefront needs products/categories/banners/settings to render.
+      // Everything else (orders with customer PII, trash, internal flags)
+      // is admin-only.
+      allow read: if document in ['products', 'categories', 'banners', 'settings']
+                  || isAdmin();
+
+      // ── Writes ────────────────────────────────────────────────────────
+      // Admin can do anything.
+      allow write: if isAdmin();
+
+      // Anonymous checkout: customers must be able to place an order
+      // without signing in. Orders are stored as a single document holding
+      // an array, so we approximate append-only by requiring the new array
+      // to be exactly one entry longer than before. This prevents wholesale
+      // deletion, but note it does not prevent an attacker from replacing
+      // existing entries while keeping size+1 — a proper fix requires
+      // refactoring orders into a subcollection (one doc per order).
+      allow create: if document == 'orders'
+                    && request.resource.data.value is list
+                    && request.resource.data.value.size() == 1;
+
+      allow update: if document == 'orders'
+                    && resource.data.value is list
+                    && request.resource.data.value is list
+                    && request.resource.data.value.size() == resource.data.value.size() + 1;
+    }
+
+    // Default deny for anything outside /app.
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }

@@ -6,7 +6,9 @@
 const firebaseEnabled = !!import.meta.env.VITE_FIREBASE_API_KEY;
 
 let fdb = null;
+let fauth = null;
 let firestoreModule = null;
+let authModule = null;
 let initPromise = null;
 
 async function ensureFirebase() {
@@ -16,6 +18,7 @@ async function ensureFirebase() {
   initPromise = (async () => {
     const { initializeApp } = await import('firebase/app');
     firestoreModule = await import('firebase/firestore');
+    authModule = await import('firebase/auth');
     const app = initializeApp({
       apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
       authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -25,7 +28,10 @@ async function ensureFirebase() {
       appId: import.meta.env.VITE_FIREBASE_APP_ID,
     });
     fdb = firestoreModule.getFirestore(app);
-    console.log('🔥 Connected to Firebase Firestore');
+    fauth = authModule.getAuth(app);
+    // Persist the admin session in localStorage so reloads don't sign out.
+    try { await authModule.setPersistence(fauth, authModule.browserLocalPersistence); } catch {}
+    console.log('🔥 Connected to Firebase Firestore + Auth');
     return true;
   })();
   return initPromise;
@@ -50,6 +56,28 @@ export const db = {
     } catch (e) {
       console.error('db.get failed', k, e);
       return fallback;
+    }
+  },
+  // Like get(), but never conflates "doc missing" with "read failed".
+  // Returns { exists, value } on success, or { error } on failure.
+  // Use this whenever the absence of a doc would trigger a destructive
+  // action (e.g. seeding/overwriting). A transient network/auth error
+  // must NOT look like "first run".
+  async getRaw(k) {
+    try {
+      if (await ensureFirebase()) {
+        const { doc, getDoc } = firestoreModule;
+        const snap = await getDoc(doc(fdb, 'app', k));
+        return snap.exists()
+          ? { exists: true, value: snap.data().value }
+          : { exists: false };
+      }
+      const raw = localStorage.getItem(KEY(k));
+      return raw === null
+        ? { exists: false }
+        : { exists: true, value: JSON.parse(raw) };
+    } catch (e) {
+      return { error: e };
     }
   },
   async set(k, value) {
@@ -83,6 +111,52 @@ export const db = {
 };
 
 export const isFirebaseConnected = firebaseEnabled;
+
+/* ────────────────────────────────────────────────────────────────────
+   AUTH — admin sign-in via Firebase Authentication
+   ──────────────────────────────────────────────────────────────────── */
+
+// Subscribe to auth state. Returns an unsubscribe fn. Callback receives
+// the Firebase user object or null. If Firebase isn't configured, the
+// callback is invoked once with null and the unsubscribe is a no-op.
+export function onAuthChanged(cb) {
+  let unsub = () => {};
+  let cancelled = false;
+  (async () => {
+    const ok = await ensureFirebase();
+    if (!ok) { cb(null); return; }
+    if (cancelled) return;
+    unsub = authModule.onAuthStateChanged(fauth, cb);
+  })();
+  return () => { cancelled = true; unsub(); };
+}
+
+export async function signInAdmin(email, password) {
+  const ok = await ensureFirebase();
+  if (!ok) throw new Error('Firebase is not configured.');
+  const { signInWithEmailAndPassword } = authModule;
+  const cred = await signInWithEmailAndPassword(fauth, email, password);
+  return cred.user;
+}
+
+export async function signOutAdmin() {
+  const ok = await ensureFirebase();
+  if (!ok) return;
+  await authModule.signOut(fauth);
+}
+
+// Re-authenticate (Firebase requires a recent login to change password),
+// then update. Throws with a usable message on failure.
+export async function changeAdminPassword(currentPassword, newPassword) {
+  const ok = await ensureFirebase();
+  if (!ok) throw new Error('Firebase is not configured.');
+  const user = fauth.currentUser;
+  if (!user || !user.email) throw new Error('Not signed in.');
+  const { EmailAuthProvider, reauthenticateWithCredential, updatePassword } = authModule;
+  const cred = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, cred);
+  await updatePassword(user, newPassword);
+}
 
 /* ────────────────────────────────────────────────────────────────────
    CLOUDINARY — unsigned image upload

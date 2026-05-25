@@ -221,7 +221,7 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
 }
 
 export default function AdminProducts() {
-  const { products, categories, settings, saveProducts } = useStore();
+  const { products, categories, settings, saveProducts, softDelete } = useStore();
   const toast = useToast();
   const [editing, setEditing] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -245,8 +245,8 @@ export default function AdminProducts() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this product?')) return;
-    await saveProducts(products.filter(p => p.id !== id));
-    toast('Product deleted');
+    await softDelete('product', id);
+    toast('Product deleted — restore from Dashboard › Recently Deleted');
   };
 
   return (

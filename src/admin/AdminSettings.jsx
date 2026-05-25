@@ -1,20 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { Save } from 'lucide-react';
+import { Save, KeyRound } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useToast } from '../contexts';
 import { PrimaryButton, Input } from '../ui';
 import AdminShell from './AdminShell';
 
+function friendlyAuthError(code) {
+  switch (code) {
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':      return 'Current password is incorrect.';
+    case 'auth/weak-password':           return 'New password is too weak (min 6 characters).';
+    case 'auth/requires-recent-login':   return 'Please sign out and sign in again, then try.';
+    case 'auth/too-many-requests':       return 'Too many attempts. Try again in a few minutes.';
+    case 'auth/network-request-failed':  return 'Network error. Check your connection.';
+    default:                              return 'Could not change password.';
+  }
+}
+
 export default function AdminSettings() {
-  const { settings, saveSettings } = useStore();
+  const { settings, saveSettings, currentUser, changePassword } = useStore();
   const toast = useToast();
   const [form, setForm] = useState(settings);
+  const [pwdForm, setPwdForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwdBusy, setPwdBusy] = useState(false);
 
   useEffect(() => setForm(settings), [settings]);
 
   const handleSave = async () => {
     await saveSettings(form);
     toast('Settings saved');
+  };
+
+  const handleChangePassword = async () => {
+    const { current, next, confirm } = pwdForm;
+    if (!current || !next) { toast('Fill in both password fields', 'error'); return; }
+    if (next.length < 6)   { toast('New password must be at least 6 characters', 'error'); return; }
+    if (next !== confirm)  { toast('New passwords do not match', 'error'); return; }
+    setPwdBusy(true);
+    try {
+      await changePassword(current, next);
+      setPwdForm({ current: '', next: '', confirm: '' });
+      toast('Password updated');
+    } catch (err) {
+      toast(friendlyAuthError(err?.code), 'error');
+    } finally {
+      setPwdBusy(false);
+    }
   };
 
   return (
@@ -87,16 +118,31 @@ export default function AdminSettings() {
           </div>
         </section>
 
+        <PrimaryButton fullWidth icon={Save} onClick={handleSave}>Save All Settings</PrimaryButton>
+
         <section className="bg-white rounded-2xl border p-5" style={{ borderColor: '#eee' }}>
           <h3 className="text-base font-bold mb-1" style={{ color: C.navy }}>Admin Access</h3>
           <p className="text-xs mb-4" style={{ color: C.muted }}>
-            Change the password to access this panel
+            Signed in as <strong style={{ color: C.navy }}>{currentUser?.email || '—'}</strong>.
+            Change your password below.
           </p>
-          <Input label="Admin Password" type="text" value={form.adminPassword}
-            onChange={e => setForm({ ...form, adminPassword: e.target.value })}/>
+          <div className="space-y-3">
+            <Input label="Current Password" type="password" value={pwdForm.current}
+              autoComplete="current-password"
+              onChange={e => setPwdForm({ ...pwdForm, current: e.target.value })}/>
+            <Input label="New Password" type="password" value={pwdForm.next}
+              autoComplete="new-password"
+              onChange={e => setPwdForm({ ...pwdForm, next: e.target.value })}/>
+            <Input label="Confirm New Password" type="password" value={pwdForm.confirm}
+              autoComplete="new-password"
+              onChange={e => setPwdForm({ ...pwdForm, confirm: e.target.value })}/>
+          </div>
+          <div className="mt-4">
+            <PrimaryButton fullWidth icon={KeyRound} onClick={handleChangePassword}>
+              {pwdBusy ? 'Updating…' : 'Change Password'}
+            </PrimaryButton>
+          </div>
         </section>
-
-        <PrimaryButton fullWidth icon={Save} onClick={handleSave}>Save All Settings</PrimaryButton>
       </div>
     </AdminShell>
   );
