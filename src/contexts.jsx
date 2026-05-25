@@ -115,11 +115,17 @@ export function StoreProvider({ children }) {
       // Note: cart and favorites are NOT loaded from Firestore — they live
       // in localStorage (initialised via useState above) so we never need
       // public write access to those keys.
+      //
+      // 'trash' is admin-only per Firestore rules and is loaded by a
+      // separate effect that runs when the admin signs in.
       const probes = await Promise.all(
-        ['products', 'categories', 'banners', 'orders', 'settings', 'trash']
+        ['products', 'categories', 'banners', 'orders', 'settings']
           .map(k => probe(k).then(r => [k, r]))
       );
 
+      // Only TRUE failures abort startup. permission-denied is expected
+      // for anonymous visitors hitting admin-only data and is handled
+      // upstream by getRaw returning { denied: true }.
       const errored = probes.find(([, r]) => r.error);
       if (errored) {
         console.error(
@@ -145,10 +151,27 @@ export function StoreProvider({ children }) {
       setOrders(val('orders', []) ?? []);
       setSettings({ ...DEFAULT_SETTINGS, ...(val('settings', {}) ?? {}) });
       // cart/favorites already initialised from localStorage above.
-      setTrash(val('trash', []) ?? []);
+      // trash will be loaded by the admin-auth effect below.
       setLoading(false);
     })();
   }, []);
+
+  // Load admin-only data (trash) once the admin signs in; clear it on
+  // sign-out so PII / deleted-item data isn't left in memory.
+  useEffect(() => {
+    if (!adminAuth) {
+      setTrash([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const r = await db.getRaw('trash');
+      if (cancelled) return;
+      if (r.exists) setTrash(r.value ?? []);
+      else setTrash([]);
+    })();
+    return () => { cancelled = true; };
+  }, [adminAuth]);
 
   // Persist cart and favorites to localStorage on change (per-browser, no
   // server write — eliminates the need for public Firestore write access).

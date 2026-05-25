@@ -59,10 +59,13 @@ export const db = {
     }
   },
   // Like get(), but never conflates "doc missing" with "read failed".
-  // Returns { exists, value } on success, or { error } on failure.
-  // Use this whenever the absence of a doc would trigger a destructive
-  // action (e.g. seeding/overwriting). A transient network/auth error
-  // must NOT look like "first run".
+  // Returns:
+  //   { exists: true, value }        — doc fetched
+  //   { exists: false }              — doc genuinely absent
+  //   { exists: false, denied: true }— rules don't allow this caller to read
+  //                                    (treat as "not visible to me", not fatal)
+  //   { error }                      — actual failure (network, etc.)
+  // A transient network/auth error must NOT look like "first run".
   async getRaw(k) {
     try {
       if (await ensureFirebase()) {
@@ -77,6 +80,12 @@ export const db = {
         ? { exists: false }
         : { exists: true, value: JSON.parse(raw) };
     } catch (e) {
+      // Firestore rules denying a read is a legitimate state for this
+      // caller — e.g. an anonymous storefront visitor probing admin-only
+      // docs. Distinguish so callers don't show "connection failed".
+      if (e?.code === 'permission-denied') {
+        return { exists: false, denied: true };
+      }
       return { error: e };
     }
   },

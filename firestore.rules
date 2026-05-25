@@ -15,9 +15,15 @@ service cloud.firestore {
 
       // ── Reads ─────────────────────────────────────────────────────────
       // Storefront needs products/categories/banners/settings to render.
-      // Everything else (orders with customer PII, trash, internal flags)
-      // is admin-only.
-      allow read: if document in ['products', 'categories', 'banners', 'settings']
+      // 'orders' is also publicly readable as an interim measure: the
+      // storefront's anonymous checkout writes the orders array as a
+      // single full-document replacement (size+1) and therefore needs to
+      // read the current array first. This exposes customer PII (names,
+      // phones, addresses) and MUST be closed by refactoring orders into
+      // a subcollection (one doc per order) so anonymous callers can
+      // create-only and never read.
+      // Everything else (trash, internal flags) is admin-only.
+      allow read: if document in ['products', 'categories', 'banners', 'settings', 'orders']
                   || isAdmin();
 
       // ── Writes ────────────────────────────────────────────────────────
