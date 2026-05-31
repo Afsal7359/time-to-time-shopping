@@ -69,7 +69,8 @@ export default function AdminOrders() {
                         style={{ background: sc.bg, color: sc.fg }}>{sc.label}</span>
                     </div>
                     <div className="text-xs truncate" style={{ color: C.mutedDark }}>
-                      {o.customer.name} · {o.customer.phone} · {o.items.length} items
+                      {[o.customer.name, o.customer.phone, `${o.items.length} items`]
+                        .filter(Boolean).join(' · ')}
                     </div>
                     <div className="text-[11px]" style={{ color: C.muted }}>
                       {new Date(o.createdAt).toLocaleString('en-IN', {
@@ -115,7 +116,9 @@ export default function AdminOrders() {
             <div className="p-4 rounded-xl" style={{ background: C.bgSoft }}>
               <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: C.mutedDark }}>Customer</p>
               <div className="space-y-1 text-sm" style={{ color: C.navy }}>
-                <div><strong>{selected.customer.name}</strong></div>
+                {selected.customer.name && (
+                  <div><strong>{selected.customer.name}</strong></div>
+                )}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Phone size={12}/> {selected.customer.phone}
                   <a href={`tel:${selected.customer.phone}`}
@@ -127,10 +130,17 @@ export default function AdminOrders() {
                 {selected.customer.email && (
                   <div className="flex items-center gap-2"><Mail size={12}/> {selected.customer.email}</div>
                 )}
-                <div className="flex items-start gap-2">
-                  <MapPin size={12} className="mt-0.5"/>
-                  <span>{selected.customer.address}, {selected.customer.city} - {selected.customer.pincode}</span>
-                </div>
+                {(() => {
+                  const addr = [selected.customer.address, selected.customer.city, selected.customer.pincode]
+                    .filter(Boolean).join(', ');
+                  if (!addr) return null;
+                  return (
+                    <div className="flex items-start gap-2">
+                      <MapPin size={12} className="mt-0.5"/>
+                      <span>{addr}</span>
+                    </div>
+                  );
+                })()}
                 {selected.customer.notes && (
                   <div className="flex items-start gap-2 pt-2">
                     <FileText size={12} className="mt-0.5"/>

@@ -85,11 +85,10 @@ export default function CheckoutScreen() {
       pincode: (fd.get('pincode') || '').trim(),
       notes:   (fd.get('notes')   || '').trim(),
     };
-    if (!form.name)                { toast('Please enter your full name', 'error');              return; }
-    if (form.phone.length < 10)    { toast('Please enter a valid 10-digit phone number', 'error'); return; }
-    if (!form.address)             { toast('Please enter your delivery address', 'error');       return; }
-    if (!form.city)                { toast('Please enter your city', 'error');                   return; }
-    if (form.pincode.length < 5)   { toast('Please enter a valid PIN code', 'error');            return; }
+    // Phone is the only required field — everything else is optional so a
+    // customer can place an order with the minimum information needed for
+    // us to contact them back.
+    if (form.phone.length < 10) { toast('Please enter a valid 10-digit phone number', 'error'); return; }
 
     setSubmitting(true);
     const order = await placeOrder({ subtotal, shipping, total, customer: form, paymentMethod: payment });
@@ -144,7 +143,7 @@ export default function CheckoutScreen() {
                 <MapPin size={16} style={{ color: C.gold }} /> Delivery Address
               </h3>
               <div className="space-y-4">
-                <Field label="Full Name *">
+                <Field label="Full Name (optional)">
                   <input name="name" type="text" placeholder="Aarav Sharma" autoComplete="name" className={inputCls} style={inputStyle} />
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
@@ -153,18 +152,18 @@ export default function CheckoutScreen() {
                       onInput={e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10); }}
                       className={inputCls} style={inputStyle} />
                   </Field>
-                  <Field label="Email">
-                    <input name="email" type="email" placeholder="optional" autoComplete="email" className={inputCls} style={inputStyle} />
+                  <Field label="Email (optional)">
+                    <input name="email" type="email" placeholder="you@example.com" autoComplete="email" className={inputCls} style={inputStyle} />
                   </Field>
                 </div>
-                <Field label="Street Address *">
+                <Field label="Street Address (optional)">
                   <input name="address" type="text" placeholder="House no, street, area" autoComplete="street-address" className={inputCls} style={inputStyle} />
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
-                  <Field label="City *">
+                  <Field label="City (optional)">
                     <input name="city" type="text" placeholder="Bengaluru" autoComplete="address-level2" className={inputCls} style={inputStyle} />
                   </Field>
-                  <Field label="PIN Code *">
+                  <Field label="PIN Code (optional)">
                     <input name="pincode" type="text" placeholder="560001" inputMode="numeric" maxLength={6}
                       onInput={e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); }}
                       className={inputCls} style={inputStyle} />

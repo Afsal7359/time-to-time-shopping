@@ -23,13 +23,22 @@ export function buildOrderMessage({ orderId, customer, lines, subtotal, shipping
       return `• ${l.product.name}${opts.length ? ` (${opts.join(' | ')})` : ''} × ${l.qty} = ${formatPrice(l.product.price * l.qty, currency)}`;
     })
     .join('\n');
+  // Customer name + address parts are optional at checkout — only include
+  // the lines that actually have content so we never send "*Customer:* "
+  // or "*Address:* , - ".
+  const addressLine = [
+    customer.address,
+    customer.city,
+    customer.pincode,
+  ].filter(Boolean).join(', ');
+
   return [
     `🛍️ *NEW ORDER #${orderId}*`,
     '',
-    `*Customer:* ${customer.name}`,
+    customer.name ? `*Customer:* ${customer.name}` : '',
     `*Phone:* ${customer.phone}`,
     customer.email ? `*Email:* ${customer.email}` : '',
-    `*Address:* ${customer.address}, ${customer.city} - ${customer.pincode}`,
+    addressLine ? `*Address:* ${addressLine}` : '',
     '',
     `*Items:*`,
     itemList,
