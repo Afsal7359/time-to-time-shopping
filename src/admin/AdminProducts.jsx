@@ -67,6 +67,7 @@ function ImageRow({ img, onChange, onRemove }) {
 function ProductEditor({ open, product, categories, onClose, onSave }) {
   const [form, setForm] = useState({
     name: '', categoryId: categories[0]?.id || '', subcategoryId: '', price: '', mrp: '', stock: 0,
+    lowStockAlert: 5,
     images: [''], description: '', variants: '', sizes: '', colors: '',
     badge: '', featured: false, rating: 4.5, reviews: 0,
   });
@@ -80,6 +81,7 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
         price: product.price || '',
         mrp: product.mrp || '',
         stock: product.stock ?? 0,
+        lowStockAlert: product.lowStockAlert ?? 5,
         images: product.images?.length ? product.images : [''],
         description: product.description || '',
         variants: (product.variants || []).join(', '),
@@ -102,6 +104,7 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
       price: Number(form.price) || 0,
       mrp: Number(form.mrp) || Number(form.price) || 0,
       stock: Number(form.stock) || 0,
+      lowStockAlert: Math.max(0, Number(form.lowStockAlert) || 0),
       rating: Number(form.rating) || 0,
       reviews: Number(form.reviews) || 0,
       images: form.images.filter(i => i.trim()),
@@ -147,14 +150,22 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
         })()}
         <Input label="Badge (e.g. New, Sale)" value={form.badge}
           onChange={e => setForm({ ...form, badge: e.target.value })}/>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Input label="Price (₹) *" type="number" value={form.price}
             onChange={e => setForm({ ...form, price: e.target.value })}/>
           <Input label="MRP (₹)" type="number" value={form.mrp}
             onChange={e => setForm({ ...form, mrp: e.target.value })}/>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <Input label="Stock" type="number" value={form.stock}
             onChange={e => setForm({ ...form, stock: e.target.value })}/>
+          <Input label="Low-stock alert at" type="number" value={form.lowStockAlert}
+            onChange={e => setForm({ ...form, lowStockAlert: e.target.value })}/>
         </div>
+        <p className="text-[11px] -mt-2" style={{ color: C.mutedDark }}>
+          When Stock drops to or below this number, the dashboard flags the product
+          and the storefront shows an "Only X left" badge.
+        </p>
         <Textarea label="Description" value={form.description}
           onChange={e => setForm({ ...form, description: e.target.value })}/>
         <Input label="Variants (comma-separated, e.g. S, M, L or 40mm, 42mm)"

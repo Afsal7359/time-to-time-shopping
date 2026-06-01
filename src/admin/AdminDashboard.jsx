@@ -26,7 +26,12 @@ export default function AdminDashboard() {
 
   const totalRevenue = orders.filter(o => o.status !== 'cancelled').reduce((a, o) => a + o.total, 0);
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
-  const lowStock = products.filter(p => p.stock < 10).length;
+  // Each product carries its own low-stock threshold (lowStockAlert),
+  // falling back to 5 for products created before the field existed.
+  const lowStock = products.filter(p => {
+    const threshold = Number(p.lowStockAlert) || 5;
+    return Number(p.stock) <= threshold;
+  }).length;
   const recentOrders = orders.slice(0, 5);
 
   const stats = [

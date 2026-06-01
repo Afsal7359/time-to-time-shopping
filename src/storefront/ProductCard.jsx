@@ -8,6 +8,9 @@ export default function ProductCard({ product, onTap }) {
   const { favorites, toggleFav, settings } = useStore();
   const isFav = favorites.includes(product.id);
   const off = product.mrp > product.price ? Math.round((1 - product.price / product.mrp) * 100) : 0;
+  // Per-product low-stock threshold; falls back to 5 if not set on the product.
+  const lowAt = Number(product.lowStockAlert) || 5;
+  const stock = Number(product.stock) || 0;
 
   return (
     <div onClick={onTap} className="cursor-pointer group">
@@ -54,6 +57,13 @@ export default function ProductCard({ product, onTap }) {
             <span className="text-[10px]" style={{ color: C.muted }}>({product.reviews})</span>
           </div>
         )}
+        {stock === 0 ? (
+          <div className="text-[10px] font-bold mt-1" style={{ color: '#dc2626' }}>Out of stock</div>
+        ) : stock <= lowAt ? (
+          <div className="text-[10px] font-bold mt-1" style={{ color: '#ea580c' }}>
+            Only {stock} left
+          </div>
+        ) : null}
       </div>
     </div>
   );

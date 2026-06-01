@@ -42,6 +42,8 @@ export default function ProductDetailScreen() {
 
   const off = product.mrp > product.price ? Math.round((1 - product.price / product.mrp) * 100) : 0;
   const isFav = favorites.includes(product.id);
+  // Per-product low-stock threshold; falls back to 5 when the field isn't set.
+  const lowAt = Number(product.lowStockAlert) || 5;
 
   const resetAutoScroll = () => {
     if (product.images.length <= 1) return;
@@ -195,9 +197,9 @@ export default function ProductDetailScreen() {
               )}
             </p>
             <div className="mt-4 flex items-center gap-2 text-xs">
-              <span className={`w-2 h-2 rounded-full ${product.stock > 5 ? 'bg-green-500' : 'bg-orange-500'}`} />
-              <span style={{ color: product.stock > 5 ? '#16a34a' : '#ea580c' }}>
-                {product.stock > 5 ? 'In stock' : product.stock > 0 ? `Only ${product.stock} left` : 'Out of stock'}
+              <span className={`w-2 h-2 rounded-full ${product.stock > lowAt ? 'bg-green-500' : 'bg-orange-500'}`} />
+              <span style={{ color: product.stock > lowAt ? '#16a34a' : '#ea580c' }}>
+                {product.stock > lowAt ? 'In stock' : product.stock > 0 ? `Only ${product.stock} left` : 'Out of stock'}
               </span>
             </div>
           </div>
@@ -356,9 +358,9 @@ export default function ProductDetailScreen() {
                 </p>
               </div>
               <div className="flex items-center gap-2 text-sm mb-8">
-                <span className={`w-2.5 h-2.5 rounded-full ${product.stock > 5 ? 'bg-green-500' : 'bg-orange-500'}`} />
-                <span className="font-semibold" style={{ color: product.stock > 5 ? '#15803d' : '#c2410c' }}>
-                  {product.stock > 5 ? 'In stock — ships within 2 business days' : product.stock > 0 ? `Only ${product.stock} left — order soon!` : 'Currently out of stock'}
+                <span className={`w-2.5 h-2.5 rounded-full ${product.stock > lowAt ? 'bg-green-500' : 'bg-orange-500'}`} />
+                <span className="font-semibold" style={{ color: product.stock > lowAt ? '#15803d' : '#c2410c' }}>
+                  {product.stock > lowAt ? 'In stock — ships within 2 business days' : product.stock > 0 ? `Only ${product.stock} left — order soon!` : 'Currently out of stock'}
                 </span>
               </div>
             </div>

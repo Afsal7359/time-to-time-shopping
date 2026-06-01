@@ -87,8 +87,9 @@ export default function CheckoutScreen() {
     };
     // Phone is the only required field — everything else is optional so a
     // customer can place an order with the minimum information needed for
-    // us to contact them back.
-    if (form.phone.length < 10) { toast('Please enter a valid 10-digit phone number', 'error'); return; }
+    // us to contact them back. 5 digits is the minimum we accept (covers
+    // short-form numbers; the admin will still see whatever they typed).
+    if (form.phone.length < 5) { toast('Please enter a valid phone number (at least 5 digits)', 'error'); return; }
 
     setSubmitting(true);
     const order = await placeOrder({ subtotal, shipping, total, customer: form, paymentMethod: payment });
@@ -148,8 +149,8 @@ export default function CheckoutScreen() {
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Phone *">
-                    <input name="phone" type="tel" placeholder="9876543210" inputMode="numeric" maxLength={10}
-                      onInput={e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10); }}
+                    <input name="phone" type="tel" placeholder="9876543210" inputMode="numeric" maxLength={15}
+                      onInput={e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 15); }}
                       className={inputCls} style={inputStyle} />
                   </Field>
                   <Field label="Email (optional)">
