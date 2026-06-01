@@ -62,8 +62,14 @@ export default function CheckoutScreen() {
   const { back, navigate } = useRoute();
   const toast = useToast();
 
-  // Uncontrolled form — no re-renders while typing, guaranteed no focus loss
-  const formRef = useRef(null);
+  // Uncontrolled forms — no re-renders while typing, guaranteed no focus
+  // loss. The mobile and desktop layouts each render their own <form>, so
+  // we keep one ref per layout; handlePlace reads from whichever the user
+  // actually typed into. (A single shared ref would always resolve to the
+  // desktop form since it mounts last — causing checkout to read empty
+  // data on mobile, which is why this bug only appeared on phones.)
+  const mobileFormRef = useRef(null);
+  const desktopFormRef = useRef(null);
   const [payment, setPayment] = useState('cod');
   const [submitting, setSubmitting] = useState(false);
 
@@ -75,21 +81,34 @@ export default function CheckoutScreen() {
   const total = subtotal + shipping;
 
   const handlePlace = async () => {
-    const fd = new FormData(formRef.current);
-    const form = {
-      name:    (fd.get('name')    || '').trim(),
-      phone:   (fd.get('phone')   || '').trim(),
-      email:   (fd.get('email')   || '').trim(),
-      address: (fd.get('address') || '').trim(),
-      city:    (fd.get('city')    || '').trim(),
-      pincode: (fd.get('pincode') || '').trim(),
-      notes:   (fd.get('notes')   || '').trim(),
+    // Read both forms and prefer whichever one the user filled in. Both
+    // forms always exist in the DOM (their visibility is controlled by
+    // CSS), so we can't tell from layout alone — we pick by content.
+    const readForm = (ref) => {
+      if (!ref.current) return null;
+      const fd = new FormData(ref.current);
+      return {
+        name:    (fd.get('name')    || '').trim(),
+        phone:   (fd.get('phone')   || '').trim(),
+        email:   (fd.get('email')   || '').trim(),
+        address: (fd.get('address') || '').trim(),
+        city:    (fd.get('city')    || '').trim(),
+        pincode: (fd.get('pincode') || '').trim(),
+        notes:   (fd.get('notes')   || '').trim(),
+      };
     };
+    const a = readForm(mobileFormRef);
+    const b = readForm(desktopFormRef);
+    // Whichever one actually has a phone typed in wins. Fall back to the
+    // mobile form so the empty-state error still surfaces.
+    const form = (a?.phone ? a : b?.phone ? b : a) || b || {};
     // Phone is the only required field — everything else is optional so a
     // customer can place an order with the minimum information needed for
-    // us to contact them back. 5 digits is the minimum we accept (covers
-    // short-form numbers; the admin will still see whatever they typed).
-    if (form.phone.length < 5) { toast('Please enter a valid phone number (at least 5 digits)', 'error'); return; }
+    // us to contact them back. 5 digits is the minimum we accept.
+    if (!form.phone || form.phone.length < 5) {
+      toast('Please enter a valid phone number', 'error');
+      return;
+    }
 
     setSubmitting(true);
     const order = await placeOrder({ subtotal, shipping, total, customer: form, paymentMethod: payment });
@@ -137,7 +156,7 @@ export default function CheckoutScreen() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <form ref={formRef} onSubmit={e => e.preventDefault()} className="px-5 pt-5 space-y-6 pb-6">
+          <form ref={mobileFormRef} onSubmit={e => e.preventDefault()} className="px-5 pt-5 space-y-6 pb-6">
 
             <section>
               <h3 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: C.navy }}>
@@ -212,7 +231,7 @@ export default function CheckoutScreen() {
         <div className="flex flex-1 overflow-hidden">
           {/* Left: form */}
           <div className="flex-1 overflow-y-auto px-8 py-8">
-            <form ref={formRef} onSubmit={e => e.preventDefault()}>
+            <form ref={desktopFormRef} onSubmit={e => e.preventDefault()}>
               <section className="mb-8">
                 <h2 className="text-lg font-bold mb-5 flex items-center gap-2" style={{ color: C.navy }}>
                   <MapPin size={18} style={{ color: C.gold }} /> Delivery Address
