@@ -300,8 +300,19 @@ export function StoreProvider({ children }) {
       status: 'pending',
       createdAt: Date.now(),
     };
-    const next = [order, ...orders];
-    await saveOrders(next);
+    
+    // Fetch the latest orders from the database to avoid race conditions and stale local state
+    const res = await db.get('orders', []);
+    const latestOrders = Array.isArray(res) ? res : [];
+    const next = [order, ...latestOrders];
+    
+    // Save to the database and check for success
+    const success = await db.set('orders', next);
+    if (!success) {
+      throw new Error('Failed to save your order to the database. Please try again.');
+    }
+    
+    setOrders(next);
     clearCart();
     return order;
   };

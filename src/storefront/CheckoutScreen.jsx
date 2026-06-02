@@ -70,7 +70,9 @@ export default function CheckoutScreen() {
   // data on mobile, which is why this bug only appeared on phones.)
   const mobileFormRef = useRef(null);
   const desktopFormRef = useRef(null);
-  const [payment, setPayment] = useState('cod');
+  const [payment, setPayment] = useState(
+    settings.codAvailable ? 'cod' : settings.whatsappAvailable ? 'whatsapp' : 'cod'
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const lines = cart
@@ -111,13 +113,19 @@ export default function CheckoutScreen() {
     }
 
     setSubmitting(true);
-    const order = await placeOrder({ subtotal, shipping, total, customer: form, paymentMethod: payment });
-    setSubmitting(false);
-    if (payment === 'whatsapp') {
-      const msg = buildOrderMessage({ orderId: order.id, customer: form, lines, subtotal, shipping, total, currency: settings.currency });
-      window.open(whatsappUrl(settings.whatsappNumber, msg), '_blank');
+    try {
+      const order = await placeOrder({ subtotal, shipping, total, customer: form, paymentMethod: payment });
+      setSubmitting(false);
+      if (payment === 'whatsapp') {
+        const msg = buildOrderMessage({ orderId: order.id, customer: form, lines, subtotal, shipping, total, currency: settings.currency });
+        window.location.href = whatsappUrl(settings.whatsappNumber, msg);
+        return;
+      }
+      navigate('orderSuccess', { id: order.id });
+    } catch (err) {
+      setSubmitting(false);
+      toast(err?.message || 'Failed to place order. Please try again.', 'error');
     }
-    navigate('orderSuccess', { id: order.id });
   };
 
   const SummaryBlock = () => (

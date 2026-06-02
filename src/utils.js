@@ -20,9 +20,10 @@ export function buildOrderMessage({ orderId, customer, lines, subtotal, shipping
   const itemList = lines
     .map(l => {
       const opts = [l.variant, l.size && `Size: ${l.size}`, l.color && `Color: ${l.color}`].filter(Boolean);
-      return `• ${l.product.name}${opts.length ? ` (${opts.join(' | ')})` : ''} × ${l.qty} = ${formatPrice(l.product.price * l.qty, currency)}`;
+      const img = l.product.images?.[0] ? `\n  📷 ${l.product.images[0]}` : '';
+      return `• ${l.product.name}${opts.length ? ` (${opts.join(' | ')})` : ''} × ${l.qty} = ${formatPrice(l.product.price * l.qty, currency)}${img}`;
     })
-    .join('\n');
+    .join('\n\n');
   // Customer name + address parts are optional at checkout — only include
   // the lines that actually have content so we never send "*Customer:* "
   // or "*Address:* , - ".
