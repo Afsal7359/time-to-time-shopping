@@ -58,7 +58,7 @@ function PaymentOptions({ payment, setPayment, settings }) {
 }
 
 export default function CheckoutScreen() {
-  const { cart, products, settings, placeOrder } = useStore();
+  const { cart, products, settings, placeOrder, clearCart } = useStore();
   const { back, navigate } = useRoute();
   const toast = useToast();
 
@@ -112,15 +112,21 @@ export default function CheckoutScreen() {
       return;
     }
 
+    // WhatsApp orders are not persisted — they go straight to WhatsApp where
+    // the merchant handles them in the chat. Only generate an order ID for
+    // the message and redirect; nothing is written to the database.
+    if (payment === 'whatsapp') {
+      const orderId = `TTS${Date.now().toString().slice(-8)}`;
+      const msg = buildOrderMessage({ orderId, customer: form, lines, subtotal, shipping, total, currency: settings.currency });
+      clearCart();
+      window.location.href = whatsappUrl(settings.whatsappNumber, msg);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const order = await placeOrder({ subtotal, shipping, total, customer: form, paymentMethod: payment });
       setSubmitting(false);
-      if (payment === 'whatsapp') {
-        const msg = buildOrderMessage({ orderId: order.id, customer: form, lines, subtotal, shipping, total, currency: settings.currency });
-        window.location.href = whatsappUrl(settings.whatsappNumber, msg);
-        return;
-      }
       navigate('orderSuccess', { id: order.id });
     } catch (err) {
       setSubmitting(false);
