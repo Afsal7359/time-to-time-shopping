@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { C } from '../data';
 import { LogoMark } from '../ui';
 
-export default function LoadingScreen({ message = 'Loading store…' }) {
-  const [dot, setDot] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setDot(d => (d + 1) % 3), 500);
-    return () => clearInterval(t);
-  }, []);
-
+export default function LoadingScreen() {
   return (
     <div
       className="fixed inset-0 z-[999] flex flex-col items-center justify-center"
@@ -73,10 +66,6 @@ export default function LoadingScreen({ message = 'Loading store…' }) {
         <div className="h-[3px] w-full rounded-full overflow-hidden" style={{ background: 'rgba(212,175,55,0.15)' }}>
           <div className="h-full rounded-full ls-bar" style={{ background: `linear-gradient(90deg, ${C.goldDark}, ${C.gold}, ${C.goldLight})` }} />
         </div>
-        <p className="text-center text-[11px] mt-3 tracking-wide" style={{ color: C.muted }}>
-          {message}
-          <span style={{ letterSpacing: 2 }}>{'.'.repeat(dot + 1)}</span>
-        </p>
       </div>
     </div>
   );
