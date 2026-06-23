@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Bell, ShoppingBag, Search, SlidersHorizontal,
-  Truck, Shield, Award,
+  Truck, Banknote, Clock,
 } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
@@ -152,9 +152,9 @@ export default function HomeScreen() {
         <div className="mx-5 md:mx-8 mt-8 mb-4 grid grid-cols-3 gap-2 p-4 md:p-7 rounded-2xl md:rounded-3xl"
           style={{ background: C.navy }}>
           {[
-            { icon: Truck,  label: 'Free Shipping',  sub: 'Orders above ₹999' },
-            { icon: Shield, label: 'Secure Pay',      sub: 'Safe & encrypted' },
-            { icon: Award,  label: '100% Authentic',  sub: 'Certified genuine' },
+            { icon: Truck,    label: 'Free Shipping',      sub: 'Orders above QAR69' },
+            { icon: Banknote, label: 'Cash on Delivery',   sub: 'Available' },
+            { icon: Clock,    label: 'Same Day Delivery',  sub: 'Available' },
           ].map((it, i) => (
             <div key={i} className="text-center">
               <it.icon size={22} style={{ color: C.gold, margin: '0 auto 6px' }} />
