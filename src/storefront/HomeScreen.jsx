@@ -6,6 +6,7 @@ import {
 import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { IconButton, LogoFull } from '../ui';
+import { isOutOfStock } from '../utils';
 import BottomNav from './BottomNav';
 import ProductCard from './ProductCard';
 
@@ -15,7 +16,7 @@ export default function HomeScreen() {
   const [bannerIdx, setBannerIdx] = useState(0);
 
   const activeBanners = banners.filter(b => b.active);
-  const trending = products.filter(p => p.featured).slice(0, 8);
+  const trending = products.filter(p => p.featured && !isOutOfStock(p)).slice(0, 8);
 
   useEffect(() => {
     if (activeBanners.length < 2) return;

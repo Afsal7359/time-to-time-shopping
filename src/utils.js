@@ -1,6 +1,11 @@
 // Format a price with currency symbol and Indian-style number formatting
 export const formatPrice = (n, sym = '₹') => `${sym}${Number(n).toLocaleString('en-IN')}`;
 
+// A product is out of stock when the admin flags it as such, or when its
+// stock count hits zero. Out-of-stock products are hidden from the storefront.
+export const isOutOfStock = (product) =>
+  product?.outOfStock === true || Number(product?.stock) === 0;
+
 // Build a WhatsApp wa.me URL with a pre-formatted message
 export function whatsappUrl(number, message) {
   const cleaned = String(number).replace(/\D/g, '').replace(/^0+/, '');

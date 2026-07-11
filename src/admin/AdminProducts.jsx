@@ -69,7 +69,7 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
     name: '', categoryId: categories[0]?.id || '', subcategoryId: '', price: '', mrp: '', stock: 0,
     lowStockAlert: 5,
     images: [''], description: '', variants: '', sizes: '', colors: '',
-    badge: '', featured: false, rating: 4.5, reviews: 0,
+    badge: '', featured: false, outOfStock: false, rating: 4.5, reviews: 0,
   });
 
   useEffect(() => {
@@ -89,6 +89,7 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
         colors: (product.colors || []).join(', '),
         badge: product.badge || '',
         featured: !!product.featured,
+        outOfStock: !!product.outOfStock,
         rating: product.rating || 4.5,
         reviews: product.reviews || 0,
       });
@@ -220,6 +221,12 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
           <input type="checkbox" checked={form.featured}
             onChange={e => setForm({ ...form, featured: e.target.checked })}/>
           <span style={{ color: C.navy }}>Show in "Trending Now" on home page</span>
+        </label>
+
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={form.outOfStock}
+            onChange={e => setForm({ ...form, outOfStock: e.target.checked })}/>
+          <span style={{ color: C.navy }}>Out of stock — hide this product from the storefront</span>
         </label>
 
         <div className="flex gap-2 pt-2">

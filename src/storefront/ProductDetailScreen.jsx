@@ -6,7 +6,7 @@ import {
 import { C } from '../data';
 import { useStore, useRoute, useToast } from '../contexts';
 import { IconButton, Empty, PrimaryButton } from '../ui';
-import { formatPrice, whatsappUrl, buildProductInquiry } from '../utils';
+import { formatPrice, whatsappUrl, buildProductInquiry, isOutOfStock } from '../utils';
 
 export default function ProductDetailScreen() {
   const { products, addToCart, settings, favorites, toggleFav } = useStore();
@@ -42,6 +42,7 @@ export default function ProductDetailScreen() {
 
   const off = product.mrp > product.price ? Math.round((1 - product.price / product.mrp) * 100) : 0;
   const isFav = favorites.includes(product.id);
+  const soldOut = isOutOfStock(product);
 
   const resetAutoScroll = () => {
     if (product.images.length <= 1) return;
@@ -195,9 +196,9 @@ export default function ProductDetailScreen() {
               )}
             </p>
             <div className="mt-4 flex items-center gap-2 text-xs">
-              <span className={`w-2 h-2 rounded-full ${product.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span style={{ color: product.stock > 0 ? '#16a34a' : '#dc2626' }}>
-                {product.stock > 0 ? 'In stock' : 'Out of stock'}
+              <span className={`w-2 h-2 rounded-full ${!soldOut ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span style={{ color: !soldOut ? '#16a34a' : '#dc2626' }}>
+                {!soldOut ? 'In stock' : 'Out of stock'}
               </span>
             </div>
           </div>
@@ -211,7 +212,7 @@ export default function ProductDetailScreen() {
           <button onClick={handleAdd} className="flex-1 h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-semibold" style={{ background: '#fff', color: C.navy, border: `1.5px solid ${C.gold}` }}>
             <ShoppingBag size={14} /> Add
           </button>
-          <button onClick={handleBuyNow} disabled={product.stock === 0} className="flex-1 h-12 rounded-2xl text-sm font-semibold disabled:opacity-50"
+          <button onClick={handleBuyNow} disabled={soldOut} className="flex-1 h-12 rounded-2xl text-sm font-semibold disabled:opacity-50"
             style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: C.navy }}>
             Buy Now
           </button>
@@ -356,9 +357,9 @@ export default function ProductDetailScreen() {
                 </p>
               </div>
               <div className="flex items-center gap-2 text-sm mb-8">
-                <span className={`w-2.5 h-2.5 rounded-full ${product.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="font-semibold" style={{ color: product.stock > 0 ? '#15803d' : '#dc2626' }}>
-                  {product.stock > 0 ? 'In stock — ships within 2 business days' : 'Currently out of stock'}
+                <span className={`w-2.5 h-2.5 rounded-full ${!soldOut ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span className="font-semibold" style={{ color: !soldOut ? '#15803d' : '#dc2626' }}>
+                  {!soldOut ? 'In stock — ships within 2 business days' : 'Currently out of stock'}
                 </span>
               </div>
             </div>
@@ -376,7 +377,7 @@ export default function ProductDetailScreen() {
                 style={{ background: '#fff', color: C.navy, border: `2px solid ${C.gold}`, height: 52 }}>
                 <ShoppingBag size={16} /> Add to Cart
               </button>
-              <button onClick={handleBuyNow} disabled={product.stock === 0}
+              <button onClick={handleBuyNow} disabled={soldOut}
                 className="flex-1 rounded-2xl text-sm font-bold transition-all hover:opacity-90 disabled:opacity-50"
                 style={{ background: `linear-gradient(135deg, ${C.gold}, ${C.goldDark})`, color: C.navy, height: 52 }}>
                 Buy Now

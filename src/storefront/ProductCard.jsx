@@ -2,13 +2,13 @@ import React from 'react';
 import { Heart, Star } from 'lucide-react';
 import { C } from '../data';
 import { useStore } from '../contexts';
-import { formatPrice } from '../utils';
+import { formatPrice, isOutOfStock } from '../utils';
 
 export default function ProductCard({ product, onTap }) {
   const { favorites, toggleFav, settings } = useStore();
   const isFav = favorites.includes(product.id);
   const off = product.mrp > product.price ? Math.round((1 - product.price / product.mrp) * 100) : 0;
-  const stock = Number(product.stock) || 0;
+  const soldOut = isOutOfStock(product);
 
   return (
     <div onClick={onTap} className="cursor-pointer group">
@@ -55,7 +55,7 @@ export default function ProductCard({ product, onTap }) {
             <span className="text-[10px]" style={{ color: C.muted }}>({product.reviews})</span>
           </div>
         )}
-        {stock === 0 && (
+        {soldOut && (
           <div className="text-[10px] font-bold mt-1" style={{ color: '#dc2626' }}>Out of stock</div>
         )}
       </div>

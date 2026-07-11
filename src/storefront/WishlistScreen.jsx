@@ -3,13 +3,14 @@ import { Heart } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { Empty, PrimaryButton } from '../ui';
+import { isOutOfStock } from '../utils';
 import BottomNav from './BottomNav';
 import ProductCard from './ProductCard';
 
 export default function WishlistScreen() {
   const { products, favorites } = useStore();
   const { navigate } = useRoute();
-  const list = products.filter(p => favorites.includes(p.id));
+  const list = products.filter(p => favorites.includes(p.id) && !isOutOfStock(p));
 
   return (
     <>

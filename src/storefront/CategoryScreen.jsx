@@ -3,6 +3,7 @@ import { ArrowLeft, ShoppingBag, Search, X } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { IconButton, Empty } from '../ui';
+import { isOutOfStock } from '../utils';
 import BottomNav from './BottomNav';
 import ProductCard from './ProductCard';
 
@@ -23,7 +24,8 @@ export default function CategoryScreen() {
   const subcats = activeCatObj?.subcategories || [];
 
   const filtered = useMemo(() => {
-    let list = activeCat === 'all' ? products : products.filter(p => p.categoryId === activeCat);
+    let list = (activeCat === 'all' ? products : products.filter(p => p.categoryId === activeCat))
+      .filter(p => !isOutOfStock(p));
     if (activeSub !== 'all') list = list.filter(p => p.subcategoryId === activeSub);
     if (query) list = list.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
     if (sort === 'low') list = [...list].sort((a, b) => a.price - b.price);
