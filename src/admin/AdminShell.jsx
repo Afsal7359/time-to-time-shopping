@@ -1,25 +1,38 @@
 import React, { useState } from 'react';
 import {
   LayoutDashboard, Package, Tag, Layers, Image as ImageIcon, Settings,
-  LogOut, Menu, X, Eye,
+  LogOut, Menu, X, Eye, Boxes,
 } from 'lucide-react';
 import { C } from '../data';
 import { useStore, useRoute } from '../contexts';
 import { LogoFull } from '../ui';
+import { isZeroStock } from '../utils';
 
 export default function AdminShell({ active, children }) {
-  const { signOut } = useStore();
+  const { signOut, products } = useStore();
   const { navigate } = useRoute();
   const [mobOpen, setMobOpen] = useState(false);
+
+  // Products sitting at 0 stock — surfaced as a badge on the Stock tab so the
+  // admin sees it from any screen.
+  const outOfStockCount = products.filter(isZeroStock).length;
 
   const tabs = [
     { id: 'adminDashboard',  icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'adminOrders',     icon: Package,         label: 'Orders' },
     { id: 'adminProducts',   icon: Tag,             label: 'Products' },
+    { id: 'adminStock',      icon: Boxes,           label: 'Stock', badge: outOfStockCount },
     { id: 'adminCategories', icon: Layers,          label: 'Categories' },
     { id: 'adminBanners',    icon: ImageIcon,       label: 'Banners' },
     { id: 'adminSettings',   icon: Settings,        label: 'Settings' },
   ];
+
+  const TabBadge = ({ count }) => (
+    count > 0 ? (
+      <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center"
+        style={{ background: '#dc2626', color: '#fff' }}>{count}</span>
+    ) : null
+  );
 
   const logout = async () => {
     await signOut();
@@ -43,6 +56,7 @@ export default function AdminShell({ active, children }) {
                 color: active === t.id ? C.navy : C.muted,
               }}>
               <t.icon size={16}/> {t.label}
+              <TabBadge count={t.badge}/>
             </button>
           ))}
         </nav>
@@ -74,6 +88,7 @@ export default function AdminShell({ active, children }) {
                     color: active === t.id ? C.navy : C.muted,
                   }}>
                   <t.icon size={16}/> {t.label}
+                  <TabBadge count={t.badge}/>
                 </button>
               ))}
             </nav>

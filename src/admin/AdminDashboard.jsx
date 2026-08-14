@@ -1,10 +1,10 @@
 import React from 'react';
 import {
-  IndianRupee, ShoppingBag, AlertCircle, Tag, Package, RotateCcw, Trash2,
+  IndianRupee, ShoppingBag, AlertCircle, Tag, Package, RotateCcw, Trash2, PackageX,
 } from 'lucide-react';
 import { C, STATUS_COLORS } from '../data';
 import { useStore, useRoute, useToast } from '../contexts';
-import { formatPrice } from '../utils';
+import { formatPrice, isZeroStock } from '../utils';
 import AdminShell from './AdminShell';
 
 const KIND_LABEL = { product: 'Product', banner: 'Banner', category: 'Category' };
@@ -26,12 +26,9 @@ export default function AdminDashboard() {
 
   const totalRevenue = orders.filter(o => o.status !== 'cancelled').reduce((a, o) => a + o.total, 0);
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
-  // Each product carries its own low-stock threshold (lowStockAlert),
-  // falling back to 5 for products created before the field existed.
-  const lowStock = products.filter(p => {
-    const threshold = Number(p.lowStockAlert) || 5;
-    return Number(p.stock) <= threshold;
-  }).length;
+  // Products sitting at zero stock — these are hidden from the storefront and
+  // are the only stock situation worth alerting on.
+  const outOfStock = products.filter(isZeroStock);
   const recentOrders = orders.slice(0, 5);
 
   const stats = [
@@ -58,17 +55,22 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {lowStock > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
-          <AlertCircle size={20} className="text-orange-600 flex-shrink-0"/>
-          <div className="flex-1">
-            <div className="text-sm font-bold text-orange-900">
-              {lowStock} product{lowStock > 1 ? 's' : ''} low on stock
+      {outOfStock.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+          <PackageX size={20} className="text-red-600 flex-shrink-0 mt-0.5"/>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-red-900">
+              {outOfStock.length} product{outOfStock.length > 1 ? 's are' : ' is'} out of stock
             </div>
-            <div className="text-xs text-orange-800">Restock to avoid losing sales</div>
+            <div className="text-xs text-red-800 mt-0.5">
+              {outOfStock.slice(0, 4).map(p => p.name).join(', ')}
+              {outOfStock.length > 4 ? ` +${outOfStock.length - 4} more` : ''} — hidden from the store until restocked.
+            </div>
           </div>
-          <button onClick={() => navigate('adminProducts')}
-            className="text-xs font-semibold px-3 py-2 rounded-lg bg-orange-600 text-white">View</button>
+          <button onClick={() => navigate('adminStock')}
+            className="text-xs font-semibold px-3 py-2 rounded-lg bg-red-600 text-white flex-shrink-0">
+            Update stock
+          </button>
         </div>
       )}
 

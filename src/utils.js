@@ -6,6 +6,21 @@ export const formatPrice = (n, sym = '₹') => `${sym}${Number(n).toLocaleString
 export const isOutOfStock = (product) =>
   product?.outOfStock === true || Number(product?.stock) === 0;
 
+// Stock as a safe number for the admin panel — anything unreadable counts as
+// zero so it shows up in the out-of-stock list and gets fixed on first save.
+export const stockCount = (product) => {
+  const n = Number(product?.stock);
+  return Number.isFinite(n) ? n : 0;
+};
+
+// Zero units left — this is what the admin out-of-stock alert counts.
+export const isZeroStock = (product) => stockCount(product) === 0;
+
+// Units in hand, but the admin manually flagged it out of stock, so the
+// storefront still hides it.
+export const isHiddenWithStock = (product) =>
+  product?.outOfStock === true && stockCount(product) > 0;
+
 // Build a WhatsApp wa.me URL with a pre-formatted message
 export function whatsappUrl(number, message) {
   const cleaned = String(number).replace(/\D/g, '').replace(/^0+/, '');

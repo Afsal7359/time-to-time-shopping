@@ -8,7 +8,7 @@ import { uploadToCloudinary, cloudinaryEnabled } from '../firebase';
 import {
   PrimaryButton, GhostButton, Modal, Input, Textarea, Select,
 } from '../ui';
-import { formatPrice } from '../utils';
+import { formatPrice, stockCount, isZeroStock, isHiddenWithStock } from '../utils';
 import AdminShell from './AdminShell';
 
 function ImageRow({ img, onChange, onRemove }) {
@@ -67,7 +67,6 @@ function ImageRow({ img, onChange, onRemove }) {
 function ProductEditor({ open, product, categories, onClose, onSave }) {
   const [form, setForm] = useState({
     name: '', categoryId: categories[0]?.id || '', subcategoryId: '', price: '', mrp: '', stock: 0,
-    lowStockAlert: 5,
     images: [''], description: '', variants: '', sizes: '', colors: '',
     badge: '', featured: false, outOfStock: false, rating: 4.5, reviews: 0,
   });
@@ -81,7 +80,6 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
         price: product.price || '',
         mrp: product.mrp || '',
         stock: product.stock ?? 0,
-        lowStockAlert: product.lowStockAlert ?? 5,
         images: product.images?.length ? product.images : [''],
         description: product.description || '',
         variants: (product.variants || []).join(', '),
@@ -105,7 +103,6 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
       price: Number(form.price) || 0,
       mrp: Number(form.mrp) || Number(form.price) || 0,
       stock: Number(form.stock) || 0,
-      lowStockAlert: Math.max(0, Number(form.lowStockAlert) || 0),
       rating: Number(form.rating) || 0,
       reviews: Number(form.reviews) || 0,
       images: form.images.filter(i => i.trim()),
@@ -157,15 +154,11 @@ function ProductEditor({ open, product, categories, onClose, onSave }) {
           <Input label="MRP (₹)" type="number" value={form.mrp}
             onChange={e => setForm({ ...form, mrp: e.target.value })}/>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Stock" type="number" value={form.stock}
-            onChange={e => setForm({ ...form, stock: e.target.value })}/>
-          <Input label="Low-stock alert at" type="number" value={form.lowStockAlert}
-            onChange={e => setForm({ ...form, lowStockAlert: e.target.value })}/>
-        </div>
+        <Input label="Stock" type="number" value={form.stock}
+          onChange={e => setForm({ ...form, stock: e.target.value })}/>
         <p className="text-[11px] -mt-2" style={{ color: C.mutedDark }}>
-          When Stock drops to or below this number, the dashboard flags the product
-          and the storefront shows an "Only X left" badge.
+          At 0 the product is out of stock and hidden from the storefront.
+          Use the <strong>Stock</strong> tab to update quantities in bulk.
         </p>
         <Textarea label="Description" value={form.description}
           onChange={e => setForm({ ...form, description: e.target.value })}/>
@@ -303,7 +296,17 @@ export default function AdminProducts() {
                       style={{ color: C.muted }}>
                       <span>{cat?.name}</span>
                       <span>·</span>
-                      <span>Stock: {p.stock}</span>
+                      <span style={{ color: isZeroStock(p) ? '#dc2626' : C.muted, fontWeight: isZeroStock(p) ? 700 : 400 }}>
+                        Stock: {stockCount(p)}
+                      </span>
+                      {isZeroStock(p) && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                          style={{ background: '#fee2e2', color: '#991b1b' }}>OUT OF STOCK</span>
+                      )}
+                      {isHiddenWithStock(p) && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                          style={{ background: '#e5e7eb', color: '#374151' }}>HIDDEN</span>
+                      )}
                       {p.featured && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
                           style={{ background: C.gold, color: C.navy }}>FEATURED</span>

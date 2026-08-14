@@ -18,6 +18,7 @@ import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
 import AdminOrders from './admin/AdminOrders';
 import AdminProducts from './admin/AdminProducts';
+import AdminStock from './admin/AdminStock';
 import AdminCategories from './admin/AdminCategories';
 import AdminBanners from './admin/AdminBanners';
 import AdminSettings from './admin/AdminSettings';
@@ -35,6 +36,7 @@ function Router() {
     if (route.name === 'adminDashboard')   return <AdminDashboard/>;
     if (route.name === 'adminOrders')      return <AdminOrders/>;
     if (route.name === 'adminProducts')    return <AdminProducts/>;
+    if (route.name === 'adminStock')       return <AdminStock/>;
     if (route.name === 'adminCategories')  return <AdminCategories/>;
     if (route.name === 'adminBanners')     return <AdminBanners/>;
     if (route.name === 'adminSettings')    return <AdminSettings/>;
